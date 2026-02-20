@@ -295,10 +295,6 @@
                 const response = await fetch(API_QUEUE);
                 const result = await response.json();
                 
-                // CORREÇÃO DEFINITIVA: 
-                // 1. Se for array, usa o array.
-                // 2. Se for um objeto único (seu caso atual), coloca ele dentro de um array [result].
-                // 3. Se tiver chave .data, usa ela.
                 if (Array.isArray(result)) {
                     queueData = result;
                 } else if (result && typeof result === 'object' && result.business_id) {
@@ -315,22 +311,23 @@
                 }
 
                 queueData.forEach(os => {
+                    const urgencyText = os.urgency || 'Normal';
+                    const isUrgent = urgencyText === 'Alta' || urgencyText === 'Urgente';
+                    const urgencyClass = isUrgent ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600';
+                    
                     const card = document.createElement('div');
-                    card.className = 'p-5 cursor-pointer hover:bg-slate-50 transition border-l-4 border-transparent';
+                    // Aqui está a mágica: Adicionamos as classes de Card e espaçamento
+                    card.className = 'os-card p-5 cursor-pointer hover:bg-slate-50 transition border-l-4 border-transparent bg-white rounded-xl shadow-sm mb-3 mx-4 mt-4';
                     card.id = `card-${os.id}`;
                     card.onclick = () => selectOS(os);
                     
-                    // Ajuste de cores para Urgente/Alta
-                    const isUrgent = os.urgency === 'Alta' || os.urgency === 'Urgente';
-                    const urgencyClass = isUrgent ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600';
-
                     card.innerHTML = `
                         <div class="flex justify-between items-start mb-2">
                             <span class="text-sm font-black text-slate-900 tracking-tight">${os.business_id}</span>
-                            <span class="px-2 py-0.5 text-[9px] font-black uppercase rounded-md ${urgencyClass}">${os.urgency || 'Normal'}</span>
+                            <span class="px-2 py-0.5 text-[9px] font-black uppercase rounded-md ${urgencyClass}">${urgencyText}</span>
                         </div>
                         <p class="text-[10px] font-black text-turbo-teal uppercase tracking-widest mb-1">MARCAÇÃO: ${os.os_number || 'NÃO DEFINIDO'}</p>
-                        <p class="text-xs font-bold text-slate-700 uppercase leading-tight mb-0.5">${os.model}</p>
+                        <p class="text-xs font-bold text-slate-700 uppercase leading-tight mb-1">${os.model}</p>
                         <p class="text-[10px] font-medium text-slate-500 uppercase truncate">${os.client}</p>
                     `;
                     listContainer.appendChild(card);
