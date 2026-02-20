@@ -213,8 +213,17 @@
                 const response = await fetch(API_QUEUE);
                 const result = await response.json();
                 
-                // CORREÇÃO: Aceita array direto ou chave .data (Trava de segurança)
-                queueData = Array.isArray(result) ? result : (result.data || []);
+                // CORREÇÃO DEFINITIVA: 
+                // 1. Se for array, usa o array.
+                // 2. Se for um objeto único (seu caso atual), coloca ele dentro de um array [result].
+                // 3. Se tiver chave .data, usa ela.
+                if (Array.isArray(result)) {
+                    queueData = result;
+                } else if (result && typeof result === 'object' && result.business_id) {
+                    queueData = [result];
+                } else {
+                    queueData = result.data || [];
+                }
 
                 listContainer.innerHTML = '';
 
