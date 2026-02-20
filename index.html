@@ -241,7 +241,20 @@
             renderChecklists(); // Nova função
         });
 
-        // TAREFA: Gerar os checklists detalhados das abas
+        // Função para atualizar a cor do select dinamicamente
+        function updateSelectColor(el) {
+            const val = el.value;
+            // Reseta classes
+            el.classList.remove('bg-emerald-500', 'bg-yellow-500', 'bg-red-600', 'text-white');
+            
+            if (val === 'PEÇA OK') {
+                el.classList.add('bg-emerald-500', 'text-white');
+            } else if (val === 'RECONDICIONAR') {
+                el.classList.add('bg-yellow-500', 'text-white');
+            } else if (val === 'TROCAR') {
+                el.classList.add('bg-red-600', 'text-white');
+            }
+        }
         function renderChecklists() {
             const data = {
                 'tab-anexos': ['ABRAÇADEIRAS', 'MANGUEIRAS', 'FLANGES', 'CANOS', 'CALÇOS', 'COLETOR', 'PRISIONEIROS'],
@@ -255,10 +268,10 @@
                     <div class="grid grid-cols-12 gap-3 items-center bg-white p-2 rounded-xl border border-slate-100 hover:border-turbo-teal transition-colors">
                         <div class="col-span-4 text-[10px] font-black text-slate-700 ml-2 uppercase tracking-tight">${item}</div>
                         <div class="col-span-3">
-                            <select class="w-full bg-emerald-500 text-white text-[9px] font-black py-2 rounded-lg uppercase text-center outline-none">
-                                <option>PEÇA OK</option>
-                                <option>TROCAR</option>
-                                <option>RECONDICIONAR</option>
+                            <select onchange="updateSelectColor(this)" class="checklist-select w-full bg-emerald-500 text-white text-[9px] font-black py-2 rounded-lg uppercase text-center outline-none transition-colors duration-200">
+                                <option value="PEÇA OK">PEÇA OK</option>
+                                <option value="TROCAR">TROCAR</option>
+                                <option value="RECONDICIONAR">RECONDICIONAR</option>
                             </select>
                         </div>
                         <div class="col-span-5">
@@ -267,6 +280,9 @@
                     </div>
                 `).join('');
             });
+            
+            // Inicializa as cores (Padrão Verde)
+            document.querySelectorAll('.checklist-select').forEach(sel => updateSelectColor(sel));
         }
 
         // TAREFA: Validar e abrir o modal de serviço especial
