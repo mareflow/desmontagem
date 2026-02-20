@@ -63,7 +63,7 @@
                 <p class="text-sm font-bold leading-none">Administrador</p>
                 <p class="text-[10px] text-slate-500 uppercase tracking-wider">Desmontagem</p>
             </div>
-            <button class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-bold transition">Sair</button>
+            <button onclick="window.location.href='index.html'" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-bold transition">Sair</button>
         </div>
     </header>
 
@@ -212,7 +212,9 @@
             try {
                 const response = await fetch(API_QUEUE);
                 const result = await response.json();
-                queueData = result.data || [];
+                
+                // CORREÇÃO: Aceita array direto ou chave .data (Trava de segurança)
+                queueData = Array.isArray(result) ? result : (result.data || []);
 
                 listContainer.innerHTML = '';
 
@@ -227,14 +229,16 @@
                     card.id = `card-${os.id}`;
                     card.onclick = () => selectOS(os);
                     
-                    const urgencyClass = os.urgency === 'Alta' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600';
+                    // Ajuste de cores para Urgente/Alta
+                    const isUrgent = os.urgency === 'Alta' || os.urgency === 'Urgente';
+                    const urgencyClass = isUrgent ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600';
 
                     card.innerHTML = `
                         <div class="flex justify-between items-start mb-2">
                             <span class="text-sm font-black text-slate-900 tracking-tight">${os.business_id}</span>
                             <span class="px-2 py-0.5 text-[9px] font-black uppercase rounded-md ${urgencyClass}">${os.urgency || 'Normal'}</span>
                         </div>
-                        <p class="text-[10px] font-black text-turbo-teal uppercase tracking-widest mb-1">ID: NÃO MARCADO</p>
+                        <p class="text-[10px] font-black text-turbo-teal uppercase tracking-widest mb-1">MARCAÇÃO: ${os.os_number || 'NÃO DEFINIDO'}</p>
                         <p class="text-xs font-bold text-slate-700 uppercase leading-tight mb-0.5">${os.model}</p>
                         <p class="text-[10px] font-medium text-slate-500 uppercase truncate">${os.client}</p>
                     `;
