@@ -464,13 +464,18 @@ const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/componen
         function renderComponentGrid() {
             const grid = document.getElementById('component-grid');
             // TAREFA: Mapear títulos conforme a sua View do Banco
+            // EM UNÍSSONO: Lista completa com os 10 componentes da turbina
             const components = [
+                {title: 'CCE', items: ['Limpeza Química', 'Queima', 'Graxear', 'Tombamento']},
                 {title: 'CCO', items: ['Limpeza Química', 'Queima', 'Graxear', 'Tombamento']},
                 {title: 'CT', items: ['Limpeza Química', 'Queima', 'Graxear']},
                 {title: 'EIXO', items: ['Descarbonizar', 'Polimento', 'Metrologia']},
+                {title: 'ROTOR', items: ['Limpeza Química', 'Queima', 'Balanceamento']},
+                {title: 'COLETOR', items: ['Limpeza Química', 'Jateamento', 'Planeamento']},
+                {title: 'REPAROS', items: ['Lavagem', 'Conferência']},
                 {title: 'GEOMETRIA', items: ['Graxear', 'Lavagem no Diesel']},
                 {title: 'ATUADOR', items: ['Teste Eletrônico', 'Graxear']},
-                {title: 'REPAROS', items: ['Lavagem', 'Conferência']}
+                {title: 'ANEXOS', items: ['Conferência', 'Lavagem', 'Organização']}
             ];
 
             grid.innerHTML = components.map(comp => `
