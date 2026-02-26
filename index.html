@@ -461,6 +461,7 @@
         // Renderizar Grid de Componentes (Loop)
         function renderComponentGrid() {
             const grid = document.getElementById('component-grid');
+            // TAREFA: Mapear títulos conforme a sua View do Banco
             const components = [
                 {title: 'CCO', items: ['Limpeza Química', 'Queima', 'Graxear', 'Tombamento']},
                 {title: 'CT', items: ['Limpeza Química', 'Queima', 'Graxear']},
@@ -471,32 +472,81 @@
             ];
 
             grid.innerHTML = components.map(comp => `
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col" id="card-comp-${comp.title}">
                     <div class="px-5 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
                         <h4 class="text-xs font-black text-slate-800 tracking-tight uppercase">${comp.title}</h4>
-                        <span class="text-[8px] font-black uppercase px-2 py-1 bg-turbo-teal text-white rounded-md tracking-widest">Processo Ativo</span>
+                        <span class="text-[8px] font-black uppercase px-2 py-1 bg-turbo-teal text-white rounded-md tracking-widest">Aguardando</span>
                     </div>
                     <div class="p-5 flex-1">
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Checklist de Tratamento:</p>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Serviços Realizados:</p>
                         <div class="space-y-2.5 mb-8">
                             ${comp.items.map(item => `
                                 <label class="flex items-center space-x-3 cursor-pointer group">
-                                    <input type="checkbox" class="w-4 h-4 rounded-md border-slate-300 text-turbo-teal focus:ring-turbo-teal transition">
+                                    <input type="checkbox" class="w-4 h-4 rounded-md border-slate-300 text-turbo-teal focus:ring-turbo-teal transition" data-service="${item}">
                                     <span class="text-[11px] font-bold text-slate-600 group-hover:text-slate-900 transition">${item}</span>
                                 </label>
                             `).join('')}
                         </div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Roteamento Interno:</p>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Encaminhar para:</p>
                         <div class="grid grid-cols-2 gap-2">
-                            <button onclick="toggleRouting(this)" class="py-2 border border-slate-200 bg-white text-[9px] font-black uppercase rounded-xl hover:bg-slate-50 transition">Retífica</button>
-                            <button onclick="toggleRouting(this)" class="py-2 border border-slate-200 bg-white text-[9px] font-black uppercase rounded-xl hover:bg-slate-50 transition">Solda</button>
-                            <button onclick="toggleRouting(this)" class="py-2 border border-slate-200 bg-white text-[9px] font-black uppercase rounded-xl hover:bg-slate-50 transition">Metrologia</button>
-                            <button onclick="toggleRouting(this)" class="py-2 border border-slate-200 bg-white text-[9px] font-black uppercase rounded-xl hover:bg-slate-50 transition">Bancada</button>
-                            <button onclick="toggleRouting(this)" class="col-span-2 py-3 bg-emerald-500 text-white text-[10px] font-black uppercase rounded-xl hover:bg-emerald-600 transition mt-2 shadow-lg shadow-emerald-50">Pronto p/ Montagem</button>
+                            <button onclick="sendPieceToSector('${comp.title}', 'RETIFICA', this)" class="py-2 border border-slate-200 bg-white text-[9px] font-black uppercase rounded-xl hover:bg-slate-50 transition">Retífica</button>
+                            <button onclick="sendPieceToSector('${comp.title}', 'SOLDA', this)" class="py-2 border border-slate-200 bg-white text-[9px] font-black uppercase rounded-xl hover:bg-slate-50 transition">Solda</button>
+                            <button onclick="sendPieceToSector('${comp.title}', 'METROLOGIA', this)" class="py-2 border border-slate-200 bg-white text-[9px] font-black uppercase rounded-xl hover:bg-slate-50 transition">Metrologia</button>
+                            <button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-2 border border-slate-200 bg-white text-[9px] font-black uppercase rounded-xl hover:bg-slate-50 transition">Bancada</button>
+                            <button onclick="sendPieceToSector('${comp.title}', 'MONTAGEM', this)" class="col-span-2 py-3 bg-emerald-500 text-white text-[10px] font-black uppercase rounded-xl hover:bg-emerald-600 transition mt-2 shadow-lg shadow-emerald-50">Pronto p/ Montagem</button>
                         </div>
                     </div>
                 </div>
             `).join('');
+        }
+		
+		// TAREFA: Enviar Roteamento Individual de Peça
+        async function sendPieceToSector(pieceName, sector, btnElement) {
+            if (!currentSelection) {
+                alert("Selecione uma Ordem de Serviço primeiro!");
+                return;
+            }
+
+            // Captura os serviços marcados no card
+            const card = document.getElementById(`card-comp-${pieceName}`);
+            const checks = card.querySelectorAll('input[type="checkbox"]:checked');
+            const services = Array.from(checks).map(c => c.dataset.service);
+
+            // Estado de carregamento no botão
+            const originalText = btnElement.innerText;
+            btnElement.innerText = "ENVIANDO...";
+            btnElement.disabled = true;
+
+            const payload = {
+                os_id: currentSelection.id,
+                component: pieceName,
+                target: sector,
+                executed_services: services // Envia os itens marcados para o histórico
+            };
+
+            try {
+                const response = await fetch(API_ACTION, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    // UX: Deixa o card "desabilitado" para mostrar que já foi enviado
+                    card.classList.add('opacity-50', 'pointer-events-none');
+                    btnElement.innerText = `OK: ${sector}`;
+                    btnElement.classList.add('bg-slate-800', 'text-white');
+                } else {
+                    alert("Erro ao rotear peça. Tente novamente.");
+                    btnElement.innerText = originalText;
+                    btnElement.disabled = false;
+                }
+            } catch (error) {
+                console.error("Erro no roteamento:", error);
+                alert("Falha na conexão com o servidor.");
+                btnElement.innerText = originalText;
+                btnElement.disabled = false;
+            }
         }
     </script>
 </body>
