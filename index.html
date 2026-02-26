@@ -391,11 +391,12 @@ const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/componen
             const payload = {
                 os_id: currentSelection.id,
                 action: type,
+                target: 'REPAROS OFICINA',
                 user_id: USER_ID
             };
 
             try {
-                const response = await fetch(API_ROUTING, {
+                const response = await fetch(API_ACTION, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -526,7 +527,8 @@ const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/componen
             };
 
             try {
-                const response = await fetch(API_ACTION, {
+                // CORREÇÃO: Enviando para a rota de roteamento para não mudar o status global da OS
+                const response = await fetch(API_ROUTING, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
