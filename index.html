@@ -511,19 +511,16 @@ function renderComponentGrid() {
     }).join('');
 }
 		
-		// TAREFA: Enviar Roteamento Individual de Peça
-        async function sendPieceToSector(pieceName, sector, btnElement) {
+		async function sendPieceToSector(pieceName, sector, btnElement) {
             if (!currentSelection) {
                 alert("Selecione uma Ordem de Serviço primeiro!");
                 return;
             }
 
-            // Captura os serviços marcados no card (Garante o ID exato: card-comp-NOME)
             const card = document.getElementById('card-comp-' + pieceName);
             const checks = card.querySelectorAll('input[type="checkbox"]:checked');
             const services = Array.from(checks).map(c => c.dataset.service);
 
-            // Estado de carregamento no botão
             const originalText = btnElement.innerText;
             btnElement.innerText = "ENVIANDO...";
             btnElement.disabled = true;
@@ -532,11 +529,10 @@ function renderComponentGrid() {
                 os_id: currentSelection.id,
                 component: pieceName,
                 target: sector,
-                executed_services: services // Envia os itens marcados para o histórico
+                executed_services: services
             };
 
             try {
-                // CORREÇÃO: Enviando para a rota de roteamento para não mudar o status global da OS
                 const response = await fetch(API_ROUTING, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -544,18 +540,16 @@ function renderComponentGrid() {
                 });
 
                 if (response.ok) {
-                    // UX: Aplica o bloqueio visual e desabilita cliques
+                    // SUCESSO: Bloqueia o card visualmente e marca destino
                     if (card) {
                         card.classList.add('opacity-50', 'grayscale');
                         card.style.pointerEvents = 'none';
                     }
                     btnElement.innerHTML = `<i class="fa-solid fa-check mr-1"></i> ENVIADO (${sector})`;
-                    btnElement.classList.add('bg-slate-800', 'text-white');
+                    btnElement.classList.add('bg-slate-800', 'text-white', 'cursor-default');
                 } else {
-                    btnElement.innerText = `OK: ${sector}`;
-                    btnElement.classList.add('bg-slate-800', 'text-white');
-                } else {
-                    alert("Erro ao rotear peça. Tente novamente.");
+                    // ERRO NA RESPOSTA: Avisa o usuário e libera o botão
+                    alert("Erro ao rotear peça. O servidor recusou o pedido.");
                     btnElement.innerText = originalText;
                     btnElement.disabled = false;
                 }
