@@ -238,8 +238,8 @@ const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/componen
         // Inicialização
         document.addEventListener('DOMContentLoaded', () => {
             loadDisassemblyQueue();
-            renderComponentGrid();
-            renderChecklists(); // Nova função
+            // renderComponentGrid agora só será chamada ao selecionar uma OS
+            renderChecklists(); 
         });
 
         // Função para atualizar a cor do select dinamicamente
@@ -360,22 +360,29 @@ const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/componen
         function selectOS(os) {
             currentSelection = os;
 
-            // UI Sidebar
+            // 1. UI Sidebar (Marcação visual de seleção)
             document.querySelectorAll('#os-list > div').forEach(c => c.classList.remove('os-selected'));
-            document.getElementById(`card-${os.id}`).classList.add('os-selected');
+            const selectedCard = document.getElementById(`card-${os.id}`);
+            if (selectedCard) selectedCard.classList.add('os-selected');
 
-            // Workspace
+            // 2. Workspace (Mostra a tela de trabalho)
             document.getElementById('welcome-screen').classList.add('hidden');
             document.getElementById('main-workspace').classList.remove('hidden');
             document.getElementById('footer-actions').classList.remove('hidden');
 
+            // 3. Header (Preenche os dados da OS no painel azul)
             document.getElementById('display-os').innerText = os.business_id;
             document.getElementById('display-desc').innerText = `${os.client} | ${os.model}`;
             
-            // Ajustar botões se já estiver iniciado (Lógica simples de UI)
+            // 4. CHAMADA VITAL: Renderiza os 10 cards com a memória de rastreio (tracking)
+            renderComponentGrid();
+
+            // 5. Ajustar botões de controle
             const btnStart = document.getElementById('btn-start');
-            btnStart.innerText = 'Iniciar Desmontagem';
-            btnStart.classList.remove('opacity-50');
+            if (btnStart) {
+                btnStart.innerText = 'Iniciar Desmontagem';
+                btnStart.classList.remove('opacity-50');
+            }
         }
 
         // Enviar Ação (Iniciar/Concluir)
