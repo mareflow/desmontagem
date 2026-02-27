@@ -514,8 +514,8 @@ const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/componen
                 return;
             }
 
-            // Captura os serviços marcados no card
-            const card = document.getElementById(`card-comp-${pieceName}`);
+            // Captura os serviços marcados no card (Garante o ID exato: card-comp-NOME)
+            const card = document.getElementById('card-comp-' + pieceName);
             const checks = card.querySelectorAll('input[type="checkbox"]:checked');
             const services = Array.from(checks).map(c => c.dataset.service);
 
@@ -540,8 +540,14 @@ const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/componen
                 });
 
                 if (response.ok) {
-                    // UX: Deixa o card "desabilitado" para mostrar que já foi enviado
-                    card.classList.add('opacity-50', 'pointer-events-none');
+                    // UX: Aplica o bloqueio visual e desabilita cliques
+                    if (card) {
+                        card.classList.add('opacity-50', 'grayscale');
+                        card.style.pointerEvents = 'none';
+                    }
+                    btnElement.innerHTML = `<i class="fa-solid fa-check mr-1"></i> ENVIADO (${sector})`;
+                    btnElement.classList.add('bg-slate-800', 'text-white');
+                } else {
                     btnElement.innerText = `OK: ${sector}`;
                     btnElement.classList.add('bg-slate-800', 'text-white');
                 } else {
