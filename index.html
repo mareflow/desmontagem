@@ -478,27 +478,31 @@ function renderComponentGrid() {
             ];
 
             grid.innerHTML = components.map(comp => {
-                // TAREFA: Verifica se esta peça já foi roteada anteriormente (Memória do Backend)
-                const pieceTracking = (currentSelection.tracking || []).find(t => t.component === comp.title);
-                const isRoteada = !!pieceTracking;
+                // PULO DO GATO: Verifica se esta peça já consta no campo 'tracking' que veio do banco
+                const trackingData = (currentSelection.tracking || []).find(t => t.component === comp.title);
+                const isRoteada = !!trackingData;
 
-                // Estilos dinâmicos baseados no rastreio
-                const cardClasses = isRoteada ? 'opacity-50 grayscale pointer-events-none' : '';
-                const badgeText = isRoteada ? `ENCAMINHADO (${pieceTracking.target})` : 'Aguardando';
-                const badgeClass = isRoteada ? 'bg-slate-800' : 'bg-turbo-teal';
+                // Estilos de bloqueio se a peça já "viajou"
+                const cardStyle = isRoteada ? 'opacity-40 grayscale pointer-events-none' : '';
+                const badgeText = isRoteada ? `EM ${trackingData.stage || trackingData.target}` : 'AGUARDANDO';
+                const badgeColor = isRoteada ? 'bg-slate-500' : 'bg-turbo-teal';
 
-                const itemHtml = comp.items.map(item => `
-                    <label class="flex items-center space-x-3 cursor-pointer group">
-                        <input type="checkbox" ${isRoteada ? 'disabled checked' : ''} class="w-4 h-4 rounded-md border-slate-300 text-turbo-teal focus:ring-turbo-teal transition" data-service="${item}">
-                        <span class="text-[11px] font-bold text-slate-600 group-hover:text-slate-900 transition">${item}</span>
-                    </label>
-                `).join('');
+                const itemHtml = comp.items.map(item => {
+                    // Marca o checkbox se o serviço já estava salvo no banco
+                    const isChecked = isRoteada && (trackingData.services || []).includes(item) ? 'checked' : '';
+                    return `
+                        <label class="flex items-center space-x-3 cursor-pointer group">
+                            <input type="checkbox" ${isChecked} ${isRoteada ? 'disabled' : ''} class="w-4 h-4 rounded-md border-slate-300 text-turbo-teal focus:ring-turbo-teal transition" data-service="${item}">
+                            <span class="text-[11px] font-bold text-slate-600 group-hover:text-slate-900 transition">${item}</span>
+                        </label>
+                    `;
+                }).join('');
 
                 return `
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col ${cardClasses}" id="card-comp-${comp.title}">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col ${cardStyle}" id="card-comp-${comp.title}">
                         <div class="px-5 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
                             <h4 class="text-xs font-black text-slate-800 tracking-tight uppercase">${comp.title}</h4>
-                            <span class="text-[8px] font-black uppercase px-2 py-1 ${badgeClass} text-white rounded-md tracking-widest">${badgeText}</span>
+                            <span class="text-[8px] font-black uppercase px-2 py-1 ${badgeColor} text-white rounded-md tracking-widest">${badgeText}</span>
                         </div>
                         <div class="p-5 flex-1">
                             <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Serviços Realizados:</p>
