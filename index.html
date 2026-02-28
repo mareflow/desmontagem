@@ -13,252 +13,284 @@
         .text-turbo-teal { color: #0D9488; }
         .border-turbo-teal { border-color: #0D9488; }
         .bg-turbo-orange { background-color: #EA580C; }
-        .os-selected { border-left: 4px solid #0D9488; background-color: #f0fdfa; }
+        .os-selected { border-left: 4px solid #0D9488 !important; background-color: #f0fdfa !important; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #0D9488; border-radius: 10px; }
         .input-clean { background-color: #ffffff; border: 1px solid #d1d5db; color: #111827; transition: all 0.2s; }
-        .input-clean:focus { border-color: #0D9488; outline: none; }
+        .input-clean:focus { border-color: #0D9488; outline: none; box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.1); }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen overflow-hidden">
 
+    <!-- MODAL SUCESSO -->
+    <div id="modalSuccess" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl text-center">
+            <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-check text-3xl"></i>
+            </div>
+            <h4 class="text-xl font-black text-slate-800 mb-2">Ação Realizada!</h4>
+            <p id="successMsg" class="text-slate-500 text-sm mb-6 font-medium italic">Operação concluída com sucesso.</p>
+            <button onclick="closeModal('modalSuccess')" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl uppercase text-xs tracking-widest transition hover:bg-black">Continuar</button>
+        </div>
+    </div>
+
     <!-- HEADER -->
-    <header class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-40">
+    <header class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm">
         <div class="flex items-center space-x-4">
             <img src="https://i.postimg.cc/Jh5Jvrc9/IMG-7901.png" alt="TurboSul Logo" class="h-10">
             <div>
-                <h1 class="text-lg font-bold tracking-tight">TurboSul - Controle de Produção</h1>
-                <p class="text-xs text-slate-500">Gerenciamento de Ordens de Serviço</p>
+                <h1 class="text-lg font-bold tracking-tight text-slate-900 uppercase">TurboSul - Controle de Produção</h1>
+                <p class="text-xs text-slate-500 font-medium italic">Gerenciamento de Ordens de Serviço</p>
             </div>
         </div>
         <div class="flex items-center space-x-6">
             <div class="text-right border-r pr-6 border-slate-200">
                 <p class="text-sm font-bold leading-none">Administrador</p>
-                <p class="text-[10px] text-slate-500 uppercase tracking-wider">Desmontagem</p>
+                <p class="text-[10px] text-turbo-teal font-black uppercase tracking-wider">Desmontagem</p>
             </div>
             <button class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-bold transition">Sair</button>
         </div>
     </header>
 
     <div class="flex h-[calc(100vh-64px)]">
+        <!-- SIDEBAR -->
         <aside class="w-80 bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0">
-            <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                <h2 class="text-xs font-black uppercase tracking-widest text-slate-500">Ordens em Desmonte</h2>
-                <button onclick="loadDisassemblyQueue()" class="text-turbo-teal"><i class="fa-solid fa-rotate"></i></button>
+            <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center sticky top-0 z-20">
+                <h2 class="text-xs font-black uppercase tracking-widest text-slate-500 italic">Ordens em Desmonte</h2>
+                <button onclick="loadDisassemblyQueue()" class="text-turbo-teal hover:rotate-180 transition-all duration-500">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
             </div>
             <div id="os-list" class="divide-y divide-slate-100">
-                <div class="p-8 text-center text-slate-400 text-xs italic">Carregando fila...</div>
+                <div class="p-8 text-center text-slate-400 text-xs italic animate-pulse">Carregando fila...</div>
             </div>
         </aside>
 
-        <main class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+        <!-- MAIN -->
+        <main class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-slate-50">
+            
             <div id="welcome-screen" class="h-full flex flex-col items-center justify-center text-slate-400">
-                <i class="fa-solid fa-file-invoice text-5xl mb-4 opacity-20"></i>
+                <i class="fa-solid fa-screwdriver-wrench text-6xl mb-4 opacity-10"></i>
                 <p class="uppercase tracking-widest font-bold text-sm">Selecione uma Ordem de Serviço</p>
             </div>
 
             <div id="main-workspace" class="hidden space-y-6">
+                <!-- TOP INFO -->
                 <div class="flex flex-col lg:flex-row gap-6">
-                    <div class="flex-1 bg-turbo-teal rounded-2xl shadow-sm text-white p-6 min-h-[160px] flex flex-col justify-between">
-                        <div>
+                    <div class="flex-1 bg-turbo-teal rounded-2xl shadow-lg text-white p-6 min-h-[160px] flex flex-col justify-between relative overflow-hidden">
+                        <div class="relative z-10">
                             <h2 id="display-os" class="text-3xl font-black mb-1 italic">OS-XXXX</h2>
-                            <p id="display-desc" class="text-sm font-medium opacity-90 uppercase tracking-widest">CLIENTE | MODELO</p>
+                            <p id="display-desc" class="text-sm font-medium opacity-90 uppercase tracking-widest italic">CLIENTE | MODELO</p>
                         </div>
-                        <div class="flex space-x-3">
-                            <button onclick="handleAction('START')" id="btn-start" class="bg-white text-turbo-teal px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest">Iniciar Desmontagem</button>
+                        <div class="flex space-x-3 relative z-10">
+                            <button onclick="handleAction('START')" id="btn-start" class="bg-white text-turbo-teal px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-100 transition shadow-md">Iniciar Desmontagem</button>
                         </div>
+                        <i class="fa-solid fa-gear absolute right-[-20px] bottom-[-20px] text-white opacity-10 text-9xl"></i>
                     </div>
 
                     <div class="lg:w-96 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                        <h3 class="text-[10px] font-black uppercase text-turbo-teal mb-4">Identificação e Marcação</h3>
+                        <h3 class="text-[10px] font-black uppercase text-turbo-teal mb-4 tracking-widest">Identificação e Marcação</h3>
                         <div class="space-y-4">
-                            <select class="w-full input-clean text-sm rounded-xl px-4 py-2.5">
+                            <select class="w-full input-clean text-sm rounded-xl px-4 py-3 font-bold">
                                 <option>Consumidor Final</option><option>Estoque DPS</option><option>Outros</option>
                             </select>
                             <div class="flex space-x-2">
-                                <input type="text" placeholder="Ex: CF-617" class="flex-1 input-clean text-sm font-mono rounded-xl px-4 py-2.5">
-                                <button class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase">Gravar</button>
+                                <input type="text" placeholder="Ex: CF-617" class="flex-1 input-clean text-sm font-mono rounded-xl px-4 py-3">
+                                <button class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl text-xs font-bold uppercase transition shadow-lg shadow-blue-100">Gravar</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
+                <!-- VISTORIA -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                        <h3 class="text-[10px] font-black uppercase text-slate-400">Vistoria de Avarias</h3>
+                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                        <h3 class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Vistoria de Avarias (Conferência)</h3>
                     </div>
-                    <div id="checklists-container" class="p-6 space-y-2"></div>
+                    <div id="checklists-container" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Gerado via JS -->
+                    </div>
                 </div>
 
-                <div id="component-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-32"></div>
+                <!-- CARDS COMPONENTES -->
+                <div id="component-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-32">
+                    <!-- Gerado via JS -->
+                </div>
             </div>
         </main>
     </div>
 
-    <!-- BOTÃO FIXO FINAL -->
+    <!-- FOOTER -->
     <div id="footer-actions" class="fixed bottom-0 right-0 p-8 z-30 hidden">
-        <button onclick="handleAction('FINISH')" class="bg-turbo-orange hover:bg-orange-700 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-sm shadow-2xl transition-all">
+        <button onclick="handleAction('FINISH')" class="bg-turbo-orange hover:bg-orange-700 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-sm shadow-2xl transition-all transform hover:-translate-y-1">
             Concluir Limpeza e Liberar OS
         </button>
     </div>
 
-const API_QUEUE = 'https://webhook.mareflow.com.br/webhook/production/disassembly-queue';
-const API_ACTION = 'https://webhook.mareflow.com.br/webhook/production/disassembly-action';
-const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/component-routing';
-const USER_ID = '8ab0d7ed-055c-4480-a1af-eb0b08894682';
+    <script>
+        const API_QUEUE = 'https://webhook.mareflow.com.br/webhook/production/disassembly-queue';
+        const API_ACTION = 'https://webhook.mareflow.com.br/webhook/production/disassembly-action';
+        const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/component-routing';
+        const USER_ID = '8ab0d7ed-055c-4480-a1af-eb0b08894682';
 
-let currentSelection = null;
-let queueData = [];
+        let currentSelection = null;
+        let queueData = [];
 
-// ESTRUTURA COMPLETA DE COMPONENTES (RESTABELECIDA)
-const MASTER_COMPONENTS = [
-    {title: 'CCE', items: ["ANÁLISE", "USINAR BORDA QUENTE", "USINAR BORDA FRIA", "LIXAR", "CONCENT.", "COLO MANCAL", "EMBUCHAR", "CANAL VITON", "STEPBOARD", "ADAPTAÇÃO", "ROSCAS", "TRANSFORMAÇÃO ROSCAS", "ROSCAS POSTIÇAS", "FRESAMENTO"]},
-    {title: 'CCO', items: ["ANÁLISE", "ROSCAS", "ROSCAS POSTIÇAS", "EMBUCHAMENTO", "SOB MEDIDA", "ABERTURA DE TRINCAS", "RETIRAR PARAFUSOS", "ADAPTAÇÃO ENCAIXE PRATO", "ADAPTAÇÃO BOCAL ADMISSÃO", "ADAPTAÇÃO BOCAL FILTRO"]},
-    {title: 'CT', items: ["FACEAMENTO PÉ/ MESA", "FACEAMENTO SAÍDA", "REMOVER WASTEGATES", "MONTAR WASTEGATE", "FRESAMENTO DA MOEDA", "ACENTAMENTO DA CCE", "ADAPTAÇÃO DE BORDA", "EMBUCHAMENTO SAÍDA"]},
-    {title: 'EIXO', items: ["ANÁLISE", "DESEMPENO", "ABERTURA CAVA", "USINAGEM", "ABERTURA ANEL", "RETIFICA", "ROSCA EIXO", "FACEAMENTO", "FURO CENTRO", "TRANSFORMAR", "POLIMENTO EIXO"]},
-    {title: 'ROTOR', items: ["ANÁLISE", "FACEAMENTO / PORCA", "TRANSFORMAÇÃO", "EMBUCHAMENTO ROTOR", "FACEAMENTO DE PALHETAS"]},
-    {title: 'COLETOR', items: ["ROSCAS", "ROSCAS POSTIÇAS", "FRESAMENTO", "ABERTURA DE TRINCAS", "FRESAMENTO DE COLETOR - FACE 1", "FRESAMENTO DE COLETOR - FACE 2", "FRESAMENTO FACE EGR"]},
-    {title: 'REPAROS', items: ["FABRICAÇÃO MANCAL R.", "FABRICAÇÃO MANCAL A.", "PASSE EXTERNO M. RADIAL", "PASSE INTERNO M. RADIAL", "FACEAMENTO M. RADIAL", "PASSE NA FLANGE", "ADAPTAÇÃO DE FLANGE", "SOLDA PROT. TÉRMICO", "PRODUZIR PROT. TÉRMICO", "FABRICAÇÃO ESPAÇADOR R.", "FABRICAÇÃO COLAR", "CALÇO DE ALTURA"]},
-    {title: 'GEOMETRIA', items: ["SERVIÇO GERAL RETÍFICA", "DESMONTAGEM/LIMPEZA", "CONFERÊNCIA"]},
-    {title: 'ATUADOR', items: ["SERVIÇO GERAL RETÍFICA", "TESTE ELETRÔNICO", "TROCA DE ENGRENAGENS"]},
-    {title: 'ANEXOS', items: ["SERVIÇO GERAL RETÍFICA", "REVISÃO DE ACESSÓRIOS"]}
-];
+        const MASTER_COMPONENTS = [
+            {title: 'CCE', items: ["ANÁLISE", "USINAR BORDA QUENTE", "USINAR BORDA FRIA", "LIXAR", "CONCENT.", "COLO MANCAL", "EMBUCHAR", "CANAL VITON", "STEPBOARD", "ADAPTAÇÃO", "ROSCAS", "TRANSFORMAÇÃO ROSCAS", "ROSCAS POSTIÇAS", "FRESAMENTO"]},
+            {title: 'CCO', items: ["ANÁLISE", "ROSCAS", "ROSCAS POSTIÇAS", "EMBUCHAMENTO", "SOB MEDIDA", "ABERTURA DE TRINCAS", "RETIRAR PARAFUSOS", "ADAPTAÇÃO ENCAIXE PRATO", "ADAPTAÇÃO BOCAL ADMISSÃO", "ADAPTAÇÃO BOCAL FILTRO"]},
+            {title: 'CT', items: ["FACEAMENTO PÉ/ MESA", "FACEAMENTO SAÍDA", "REMOVER WASTEGATES", "MONTAR WASTEGATE", "FRESAMENTO DA MOEDA", "ACENTAMENTO DA CCE", "ADAPTAÇÃO DE BORDA", "EMBUCHAMENTO SAÍDA"]},
+            {title: 'EIXO', items: ["ANÁLISE", "DESEMPENO", "ABERTURA CAVA", "USINAGEM", "ABERTURA ANEL", "RETIFICA", "ROSCA EIXO", "FACEAMENTO", "FURO CENTRO", "TRANSFORMAR", "POLIMENTO EIXO"]},
+            {title: 'ROTOR', items: ["ANÁLISE", "FACEAMENTO / PORCA", "TRANSFORMAÇÃO", "EMBUCHAMENTO ROTOR", "FACEAMENTO DE PALHETAS"]},
+            {title: 'COLETOR', items: ["ROSCAS", "ROSCAS POSTIÇAS", "FRESAMENTO", "ABERTURA DE TRINCAS", "FRESAMENTO DE COLETOR - FACE 1", "FRESAMENTO DE COLETOR - FACE 2", "FRESAMENTO FACE EGR"]},
+            {title: 'REPAROS', items: ["FABRICAÇÃO MANCAL R.", "FABRICAÇÃO MANCAL A.", "PASSE EXTERNO M. RADIAL", "PASSE INTERNO M. RADIAL", "FACEAMENTO M. RADIAL", "PASSE NA FLANGE", "ADAPTAÇÃO DE FLANGE", "SOLDA PROT. TÉRMICO", "PRODUZIR PROT. TÉRMICO", "FABRICAÇÃO ESPAÇADOR R.", "FABRICAÇÃO COLAR", "CALÇO DE ALTURA"]},
+            {title: 'GEOMETRIA', items: ["SERVIÇO GERAL RETÍFICA", "DESMONTAGEM/LIMPEZA", "CONFERÊNCIA"]},
+            {title: 'ATUADOR', items: ["SERVIÇO GERAL RETÍFICA", "TESTE ELETRÔNICO", "TROCA DE ENGRENAGENS"]},
+            {title: 'ANEXOS', items: ["SERVIÇO GERAL RETÍFICA", "REVISÃO DE ACESSÓRIOS"]}
+        ];
 
-document.addEventListener('DOMContentLoaded', loadDisassemblyQueue);
+        document.addEventListener('DOMContentLoaded', loadDisassemblyQueue);
 
-async function loadDisassemblyQueue() {
-    try {
-        const response = await fetch(API_QUEUE);
-        const result = await response.json();
-        queueData = Array.isArray(result) ? result : (result.data || [result]);
-        renderSidebar();
-    } catch (error) { console.error("Erro na Fila:", error); }
-}
+        async function loadDisassemblyQueue() {
+            try {
+                const response = await fetch(API_QUEUE);
+                const result = await response.json();
+                queueData = Array.isArray(result) ? result : (result.data || [result]);
+                renderSidebar();
+            } catch (error) { console.error("Erro na Fila:", error); }
+        }
 
-function renderSidebar() {
-    const listContainer = document.getElementById('os-list');
-    listContainer.innerHTML = '';
-    queueData.forEach(os => {
-        const isSelected = currentSelection?.id === os.id ? 'os-selected' : '';
-        const card = document.createElement('div');
-        card.className = `p-5 cursor-pointer border-l-4 border-transparent bg-white rounded-xl shadow-sm mb-3 mx-4 mt-4 transition-all ${isSelected}`;
-        card.onclick = () => selectOS(os);
-        card.innerHTML = `<div class="flex justify-between">
-            <span class="text-sm font-black">${os.business_id}</span>
-            <span class="text-[9px] font-bold px-2 py-0.5 rounded uppercase bg-blue-100 text-blue-600">${os.urgency || 'Normal'}</span>
-        </div><p class="text-xs text-slate-700 uppercase mt-1">${os.model}</p>`;
-        listContainer.appendChild(card);
-    });
-}
+        function renderSidebar() {
+            const listContainer = document.getElementById('os-list');
+            listContainer.innerHTML = '';
+            queueData.forEach(os => {
+                const isSelected = currentSelection?.id === os.id ? 'os-selected' : '';
+                const card = document.createElement('div');
+                card.className = `p-5 cursor-pointer border-l-4 border-transparent bg-white rounded-xl shadow-sm mb-3 mx-4 mt-4 transition-all hover:bg-slate-50 ${isSelected}`;
+                card.onclick = () => selectOS(os);
+                card.innerHTML = `<div class="flex justify-between">
+                    <span class="text-sm font-black text-slate-900">${os.business_id}</span>
+                    <span class="text-[9px] font-bold px-2 py-0.5 rounded uppercase bg-blue-100 text-blue-600">${os.urgency || 'Normal'}</span>
+                </div><p class="text-xs text-slate-500 font-medium uppercase mt-1 truncate">${os.client} | ${os.model}</p>`;
+                listContainer.appendChild(card);
+            });
+        }
 
-function selectOS(os) {
-    currentSelection = os;
-    renderSidebar();
-    document.getElementById('welcome-screen').classList.add('hidden');
-    document.getElementById('main-workspace').classList.remove('hidden');
-    document.getElementById('footer-actions').classList.remove('hidden');
-    document.getElementById('display-os').innerText = os.business_id;
-    document.getElementById('display-desc').innerText = `${os.client} | ${os.model}`;
-    
-    renderChecklists(); // Restaura a Vistoria de Avarias
-    renderComponentGrid(); // Restaura os 10 Cards Técnicos
-}
+        function selectOS(os) {
+            currentSelection = os;
+            renderSidebar();
+            document.getElementById('welcome-screen').classList.add('hidden');
+            document.getElementById('main-workspace').classList.remove('hidden');
+            document.getElementById('footer-actions').classList.remove('hidden');
+            document.getElementById('display-os').innerText = os.business_id;
+            document.getElementById('display-desc').innerText = `${os.client} | ${os.model}`;
+            
+            renderChecklists(); 
+            renderComponentGrid(); 
+        }
 
-function renderChecklists() {
-    const container = document.getElementById('checklists-container');
-    const tabs = {
-        '1. Anexos': ['ABRAÇADEIRAS', 'MANGUEIRAS', 'FLANGES', 'CANOS', 'CALÇOS', 'COLETOR', 'PRISIONEIROS'],
-        '2. Geral': ['PARAFUSOS', 'CARCAÇA COMPRESSORA', 'CARCAÇA CENTRAL', 'ROTOR COMPRESSOR', 'EIXO ROTOR', 'PRATO COMPRESSOR', 'COLAR', 'ANEL ELÁSTICO', 'ATUADOR / VÁLVULA'],
-        '3. Caracol': ['TRINCAS (PAREDE)', 'ROSCAS / PRISIONEIROS', 'ASSENTO DA VÁLVULA', 'FACEAMENTO']
-    };
-    
-    // Mostra apenas a aba Geral por padrão para preencher o espaço
-    container.innerHTML = tabs['2. Geral'].map(item => `
-        <div class="grid grid-cols-12 gap-3 items-center bg-slate-50 p-2 rounded-xl border border-slate-100">
-            <div class="col-span-4 text-[10px] font-black text-slate-700 ml-2 uppercase">${item}</div>
-            <div class="col-span-3">
-                <select onchange="updateSelectColor(this)" class="checklist-select w-full bg-emerald-500 text-white text-[9px] font-black py-2 rounded-lg uppercase text-center outline-none">
-                    <option value="PEÇA OK">PEÇA OK</option><option value="TROCAR">TROCAR</option><option value="RECONDICIONAR">RECONDICIONAR</option>
-                </select>
-            </div>
-            <div class="col-span-5"><input type="text" placeholder="Obs..." class="w-full bg-slate-700 text-white text-[10px] rounded-lg px-3 py-2 outline-none"></div>
-        </div>`).join('');
-}
-
-function renderComponentGrid() {
-    const grid = document.getElementById('component-grid');
-    grid.innerHTML = MASTER_COMPONENTS.map(comp => {
-        const trk = (currentSelection.tracking || []).find(t => t.component === comp.title);
-        const isRoteada = !!trk;
-        const cardStyle = isRoteada ? 'opacity-40 grayscale pointer-events-none' : '';
-        const badgeText = isRoteada ? `EM ${trk.stage}` : 'AGUARDANDO';
-
-        return `
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col ${cardStyle}" id="card-comp-${comp.title}">
-                <div class="px-5 py-4 bg-slate-50 border-b flex justify-between items-center">
-                    <h4 class="text-xs font-black uppercase italic">${comp.title}</h4>
-                    <span class="text-[8px] font-black uppercase px-2 py-1 bg-turbo-teal text-white rounded-md tracking-widest">${badgeText}</span>
-                </div>
-                <div class="p-5 flex-1 overflow-y-auto max-h-[300px]">
-                    <div class="space-y-2 mb-6">
-                        ${comp.items.map(item => {
-                            const isChecked = isRoteada && (trk.services || []).includes(item) ? 'checked' : '';
-                            return `<label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" ${isChecked} ${isRoteada ? 'disabled' : ''} class="w-4 h-4 rounded border-slate-300 text-turbo-teal" data-service="${item}">
-                                <span class="text-[10px] font-bold text-slate-600 uppercase">${item}</span>
-                            </label>`;
-                        }).join('')}
+        function renderChecklists() {
+            const container = document.getElementById('checklists-container');
+            const items = ['ABRAÇADEIRAS', 'MANGUEIRAS', 'FLANGES', 'CANOS', 'CALÇOS', 'COLETOR', 'PRISIONEIROS', 'PARAFUSOS', 'CARCAÇA COMPRESSORA', 'CARCAÇA CENTRAL'];
+            container.innerHTML = items.map(item => `
+                <div class="grid grid-cols-12 gap-3 items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div class="col-span-5 text-[10px] font-black text-slate-700 uppercase tracking-tighter">${item}</div>
+                    <div class="col-span-3">
+                        <select onchange="updateSelectColor(this)" class="w-full bg-emerald-500 text-white text-[9px] font-black py-2 rounded-lg uppercase text-center outline-none">
+                            <option value="PEÇA OK">PEÇA OK</option><option value="TROCAR">TROCAR</option><option value="RECONDICIONAR">RECONDICIONAR</option>
+                        </select>
                     </div>
-                    <div class="grid grid-cols-2 gap-2 mt-auto">
-                        <button onclick="sendPieceToSector('${comp.title}', 'RETIFICA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Retífica</button>
-                        <button onclick="sendPieceToSector('${comp.title}', 'SOLDA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Solda</button>
-                        <button onclick="sendPieceToSector('${comp.title}', 'METROLOGIA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Metrologia</button>
-                        <button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Bancada</button>
-                        <button onclick="sendPieceToSector('${comp.title}', 'MONTAGEM', this)" class="col-span-2 py-3 bg-emerald-500 text-white text-[10px] font-black uppercase rounded-lg mt-2">Pronto p/ Montagem</button>
-                    </div>
-                </div>
-            </div>`;
-    }).join('');
-}
+                    <div class="col-span-4"><input type="text" placeholder="Obs..." class="w-full bg-slate-700 text-white text-[10px] rounded-lg px-3 py-2 outline-none"></div>
+                </div>`).join('');
+        }
 
-async function sendPieceToSector(pieceName, sector, btnElement) {
-    const card = document.getElementById('card-comp-' + pieceName);
-    const services = Array.from(card.querySelectorAll('input:checked')).map(c => c.dataset.service);
-    btnElement.disabled = true;
-    try {
-        const response = await fetch(API_ROUTING, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ os_id: currentSelection.id, component: pieceName, target: sector, executed_services: services })
-        });
-        if (response.ok) {
-            card.classList.add('opacity-40', 'grayscale', 'pointer-events-none');
-            btnElement.innerHTML = `<i class="fa-solid fa-check"></i> ENVIADO`;
-        } else { alert("Erro ao enviar"); btnElement.disabled = false; }
-    } catch (e) { alert("Falha na conexão"); btnElement.disabled = false; }
-}
+        function renderComponentGrid() {
+            const grid = document.getElementById('component-grid');
+            grid.innerHTML = MASTER_COMPONENTS.map(comp => {
+                const trk = (currentSelection.tracking || []).find(t => t.component === comp.title);
+                const isRoteada = !!trk;
+                const cardStyle = isRoteada ? 'opacity-40 grayscale pointer-events-none' : '';
+                const badgeText = isRoteada ? `EM ${trk.stage}` : 'AGUARDANDO';
+                const badgeColor = isRoteada ? 'bg-slate-500' : 'bg-turbo-teal';
 
-async function handleAction(type) {
-    const btn = type === 'START' ? document.getElementById('btn-start') : document.querySelector('.bg-turbo-orange');
-    btn.disabled = true;
-    try {
-        const res = await fetch(API_ACTION, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ os_id: currentSelection.id, action: type, user_id: USER_ID })
-        });
-        if (res.ok) window.location.reload();
-    } catch (e) { console.error(e); }
-}
+                const itemHtml = comp.items.map(item => {
+                    const isChecked = isRoteada && (trk.services || []).includes(item) ? 'checked' : '';
+                    return `<label class="flex items-center space-x-2 cursor-pointer p-1 rounded hover:bg-slate-50 transition">
+                        <input type="checkbox" ${isChecked} ${isRoteada ? 'disabled' : ''} class="w-4 h-4 rounded border-slate-300 text-turbo-teal" data-service="${item}">
+                        <span class="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">${item}</span>
+                    </label>`;
+                }).join('');
 
-function updateSelectColor(el) {
-    const val = el.value;
-    el.classList.remove('bg-emerald-500', 'bg-yellow-500', 'bg-red-600');
-    if (val === 'PEÇA OK') el.classList.add('bg-emerald-500');
-    else if (val === 'RECONDICIONAR') el.classList.add('bg-yellow-500');
-    else if (val === 'TROCAR') el.classList.add('bg-red-600');
-}
+                return `
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col ${cardStyle}" id="card-comp-${comp.title}">
+                        <div class="px-5 py-4 bg-slate-50 border-b flex justify-between items-center">
+                            <h4 class="text-xs font-black uppercase italic text-slate-800">${comp.title}</h4>
+                            <span class="text-[8px] font-black uppercase px-2 py-1 ${badgeColor} text-white rounded-md tracking-widest">${badgeText}</span>
+                        </div>
+                        <div class="p-5 flex-1 flex flex-col">
+                            <div class="checklist-scroll overflow-y-auto max-h-[160px] space-y-1 mb-6 pr-1">
+                                ${itemHtml}
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 mt-auto">
+                                <button onclick="sendPieceToSector('${comp.title}', 'RETIFICA', this)" class="py-2 border border-slate-200 text-[9px] font-black uppercase rounded-lg hover:bg-turbo-teal hover:text-white transition">Retífica</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'SOLDA', this)" class="py-2 border border-slate-200 text-[9px] font-black uppercase rounded-lg hover:bg-turbo-teal hover:text-white transition">Solda</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'METROLOGIA', this)" class="py-2 border border-slate-200 text-[9px] font-black uppercase rounded-lg hover:bg-turbo-teal hover:text-white transition">Metrologia</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-2 border border-slate-200 text-[9px] font-black uppercase rounded-lg hover:bg-turbo-teal hover:text-white transition">Bancada</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'MONTAGEM', this)" class="col-span-2 py-3 bg-emerald-500 text-white text-[10px] font-black uppercase rounded-lg mt-2 shadow-lg shadow-emerald-50 transition hover:bg-emerald-600">Pronto p/ Montagem</button>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        async function sendPieceToSector(pieceName, sector, btnElement) {
+            const card = document.getElementById('card-comp-' + pieceName);
+            const services = Array.from(card.querySelectorAll('input:checked')).map(c => c.dataset.service);
+            btnElement.disabled = true;
+            try {
+                const response = await fetch(API_ROUTING, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ os_id: currentSelection.id, component: pieceName, target: sector, executed_services: services })
+                });
+                if (response.ok) {
+                    card.classList.add('opacity-40', 'grayscale', 'pointer-events-none');
+                    btnElement.innerHTML = `<i class="fa-solid fa-check"></i> ENVIADO`;
+                    btnElement.classList.add('bg-slate-800', 'text-white');
+                } else { alert("Erro ao enviar"); btnElement.disabled = false; }
+            } catch (e) { alert("Falha na conexão"); btnElement.disabled = false; }
+        }
+
+        async function handleAction(type) {
+            const btn = type === 'START' ? document.getElementById('btn-start') : document.querySelector('.bg-turbo-orange');
+            btn.disabled = true;
+            try {
+                const res = await fetch(API_ACTION, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ os_id: currentSelection.id, action: type, user_id: USER_ID })
+                });
+                if (res.ok) {
+                    document.getElementById('modalSuccess').classList.remove('hidden');
+                    document.getElementById('successMsg').innerText = type === 'START' ? "Desmontagem Iniciada!" : "Limpeza Concluída!";
+                }
+            } catch (e) { console.error(e); }
+            finally { btn.disabled = false; }
+        }
+
+        function updateSelectColor(el) {
+            const val = el.value;
+            el.classList.remove('bg-emerald-500', 'bg-yellow-500', 'bg-red-600');
+            if (val === 'PEÇA OK') el.classList.add('bg-emerald-500');
+            else if (val === 'RECONDICIONAR') el.classList.add('bg-yellow-500');
+            else if (val === 'TROCAR') el.classList.add('bg-red-600');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+            if (id === 'modalSuccess' && currentSelection) window.location.reload();
+        }
     </script>
 </body>
 </html>
