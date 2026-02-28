@@ -103,125 +103,162 @@
         </button>
     </div>
 
-    <script>
-        const API_QUEUE = 'https://webhook.mareflow.com.br/webhook/production/disassembly-queue';
-        const API_ACTION = 'https://webhook.mareflow.com.br/webhook/production/disassembly-action';
-        const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/component-routing';
+const API_QUEUE = 'https://webhook.mareflow.com.br/webhook/production/disassembly-queue';
+const API_ACTION = 'https://webhook.mareflow.com.br/webhook/production/disassembly-action';
+const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/component-routing';
+const USER_ID = '8ab0d7ed-055c-4480-a1af-eb0b08894682';
 
-        let currentSelection = null;
-        let queueData = [];
+let currentSelection = null;
+let queueData = [];
 
-        document.addEventListener('DOMContentLoaded', loadDisassemblyQueue);
+// ESTRUTURA COMPLETA DE COMPONENTES (RESTABELECIDA)
+const MASTER_COMPONENTS = [
+    {title: 'CCE', items: ["ANÁLISE", "USINAR BORDA QUENTE", "USINAR BORDA FRIA", "LIXAR", "CONCENT.", "COLO MANCAL", "EMBUCHAR", "CANAL VITON", "STEPBOARD", "ADAPTAÇÃO", "ROSCAS", "TRANSFORMAÇÃO ROSCAS", "ROSCAS POSTIÇAS", "FRESAMENTO"]},
+    {title: 'CCO', items: ["ANÁLISE", "ROSCAS", "ROSCAS POSTIÇAS", "EMBUCHAMENTO", "SOB MEDIDA", "ABERTURA DE TRINCAS", "RETIRAR PARAFUSOS", "ADAPTAÇÃO ENCAIXE PRATO", "ADAPTAÇÃO BOCAL ADMISSÃO", "ADAPTAÇÃO BOCAL FILTRO"]},
+    {title: 'CT', items: ["FACEAMENTO PÉ/ MESA", "FACEAMENTO SAÍDA", "REMOVER WASTEGATES", "MONTAR WASTEGATE", "FRESAMENTO DA MOEDA", "ACENTAMENTO DA CCE", "ADAPTAÇÃO DE BORDA", "EMBUCHAMENTO SAÍDA"]},
+    {title: 'EIXO', items: ["ANÁLISE", "DESEMPENO", "ABERTURA CAVA", "USINAGEM", "ABERTURA ANEL", "RETIFICA", "ROSCA EIXO", "FACEAMENTO", "FURO CENTRO", "TRANSFORMAR", "POLIMENTO EIXO"]},
+    {title: 'ROTOR', items: ["ANÁLISE", "FACEAMENTO / PORCA", "TRANSFORMAÇÃO", "EMBUCHAMENTO ROTOR", "FACEAMENTO DE PALHETAS"]},
+    {title: 'COLETOR', items: ["ROSCAS", "ROSCAS POSTIÇAS", "FRESAMENTO", "ABERTURA DE TRINCAS", "FRESAMENTO DE COLETOR - FACE 1", "FRESAMENTO DE COLETOR - FACE 2", "FRESAMENTO FACE EGR"]},
+    {title: 'REPAROS', items: ["FABRICAÇÃO MANCAL R.", "FABRICAÇÃO MANCAL A.", "PASSE EXTERNO M. RADIAL", "PASSE INTERNO M. RADIAL", "FACEAMENTO M. RADIAL", "PASSE NA FLANGE", "ADAPTAÇÃO DE FLANGE", "SOLDA PROT. TÉRMICO", "PRODUZIR PROT. TÉRMICO", "FABRICAÇÃO ESPAÇADOR R.", "FABRICAÇÃO COLAR", "CALÇO DE ALTURA"]},
+    {title: 'GEOMETRIA', items: ["SERVIÇO GERAL RETÍFICA", "DESMONTAGEM/LIMPEZA", "CONFERÊNCIA"]},
+    {title: 'ATUADOR', items: ["SERVIÇO GERAL RETÍFICA", "TESTE ELETRÔNICO", "TROCA DE ENGRENAGENS"]},
+    {title: 'ANEXOS', items: ["SERVIÇO GERAL RETÍFICA", "REVISÃO DE ACESSÓRIOS"]}
+];
 
-        async function loadDisassemblyQueue() {
-            try {
-                const response = await fetch(API_QUEUE);
-                const result = await response.json();
-                queueData = Array.isArray(result) ? result : (result.data || []);
-                renderSidebar();
-            } catch (error) { console.error(error); }
-        }
+document.addEventListener('DOMContentLoaded', loadDisassemblyQueue);
 
-        function renderSidebar() {
-            const listContainer = document.getElementById('os-list');
-            listContainer.innerHTML = '';
-            queueData.forEach(os => {
-                const isSelected = currentSelection?.id === os.id ? 'os-selected' : '';
-                const card = document.createElement('div');
-                card.className = `p-5 cursor-pointer border-l-4 border-transparent bg-white rounded-xl shadow-sm mb-3 mx-4 mt-4 ${isSelected}`;
-                card.onclick = () => selectOS(os);
-                card.innerHTML = `<span class="text-sm font-black">${os.business_id}</span><p class="text-xs text-slate-700 uppercase">${os.model}</p>`;
-                listContainer.appendChild(card);
-            });
-        }
+async function loadDisassemblyQueue() {
+    try {
+        const response = await fetch(API_QUEUE);
+        const result = await response.json();
+        queueData = Array.isArray(result) ? result : (result.data || [result]);
+        renderSidebar();
+    } catch (error) { console.error("Erro na Fila:", error); }
+}
 
-        function selectOS(os) {
-            currentSelection = os;
-            renderSidebar();
-            document.getElementById('welcome-screen').classList.add('hidden');
-            document.getElementById('main-workspace').classList.remove('hidden');
-            document.getElementById('footer-actions').classList.remove('hidden');
-            document.getElementById('display-os').innerText = os.business_id;
-            document.getElementById('display-desc').innerText = `${os.client} | ${os.model}`;
-            renderComponentGrid();
-        }
+function renderSidebar() {
+    const listContainer = document.getElementById('os-list');
+    listContainer.innerHTML = '';
+    queueData.forEach(os => {
+        const isSelected = currentSelection?.id === os.id ? 'os-selected' : '';
+        const card = document.createElement('div');
+        card.className = `p-5 cursor-pointer border-l-4 border-transparent bg-white rounded-xl shadow-sm mb-3 mx-4 mt-4 transition-all ${isSelected}`;
+        card.onclick = () => selectOS(os);
+        card.innerHTML = `<div class="flex justify-between">
+            <span class="text-sm font-black">${os.business_id}</span>
+            <span class="text-[9px] font-bold px-2 py-0.5 rounded uppercase bg-blue-100 text-blue-600">${os.urgency || 'Normal'}</span>
+        </div><p class="text-xs text-slate-700 uppercase mt-1">${os.model}</p>`;
+        listContainer.appendChild(card);
+    });
+}
 
-        function renderComponentGrid() {
-            const grid = document.getElementById('component-grid');
-            const components = [
-                {title: 'CCE', items: ['Limpeza Química', 'Queima', 'Graxear']},
-                {title: 'CCO', items: ['Limpeza Química', 'Queima', 'Graxear']},
-                {title: 'CT', items: ['Limpeza Química', 'Queima']},
-                {title: 'EIXO', items: ['Descarbonizar', 'Polimento']},
-                {title: 'ROTOR', items: ['Limpeza Química', 'Queima']},
-                {title: 'COLETOR', items: ['Limpeza Química', 'Jateamento']},
-                {title: 'REPAROS', items: ['Lavagem', 'Conferência']},
-                {title: 'GEOMETRIA', items: ['Graxear', 'Lavagem']},
-                {title: 'ATUADOR', items: ['Teste Eletrônico']},
-                {title: 'ANEXOS', items: ['Conferência', 'Lavagem']}
-            ];
+function selectOS(os) {
+    currentSelection = os;
+    renderSidebar();
+    document.getElementById('welcome-screen').classList.add('hidden');
+    document.getElementById('main-workspace').classList.remove('hidden');
+    document.getElementById('footer-actions').classList.remove('hidden');
+    document.getElementById('display-os').innerText = os.business_id;
+    document.getElementById('display-desc').innerText = `${os.client} | ${os.model}`;
+    
+    renderChecklists(); // Restaura a Vistoria de Avarias
+    renderComponentGrid(); // Restaura os 10 Cards Técnicos
+}
 
-            grid.innerHTML = components.map(comp => {
-                const trk = (currentSelection.tracking || []).find(t => t.component === comp.title);
-                const isRoteada = !!trk;
-                const cardStyle = isRoteada ? 'opacity-40 grayscale pointer-events-none' : '';
-                const badgeText = isRoteada ? `EM ${trk.stage}` : 'AGUARDANDO';
+function renderChecklists() {
+    const container = document.getElementById('checklists-container');
+    const tabs = {
+        '1. Anexos': ['ABRAÇADEIRAS', 'MANGUEIRAS', 'FLANGES', 'CANOS', 'CALÇOS', 'COLETOR', 'PRISIONEIROS'],
+        '2. Geral': ['PARAFUSOS', 'CARCAÇA COMPRESSORA', 'CARCAÇA CENTRAL', 'ROTOR COMPRESSOR', 'EIXO ROTOR', 'PRATO COMPRESSOR', 'COLAR', 'ANEL ELÁSTICO', 'ATUADOR / VÁLVULA'],
+        '3. Caracol': ['TRINCAS (PAREDE)', 'ROSCAS / PRISIONEIROS', 'ASSENTO DA VÁLVULA', 'FACEAMENTO']
+    };
+    
+    // Mostra apenas a aba Geral por padrão para preencher o espaço
+    container.innerHTML = tabs['2. Geral'].map(item => `
+        <div class="grid grid-cols-12 gap-3 items-center bg-slate-50 p-2 rounded-xl border border-slate-100">
+            <div class="col-span-4 text-[10px] font-black text-slate-700 ml-2 uppercase">${item}</div>
+            <div class="col-span-3">
+                <select onchange="updateSelectColor(this)" class="checklist-select w-full bg-emerald-500 text-white text-[9px] font-black py-2 rounded-lg uppercase text-center outline-none">
+                    <option value="PEÇA OK">PEÇA OK</option><option value="TROCAR">TROCAR</option><option value="RECONDICIONAR">RECONDICIONAR</option>
+                </select>
+            </div>
+            <div class="col-span-5"><input type="text" placeholder="Obs..." class="w-full bg-slate-700 text-white text-[10px] rounded-lg px-3 py-2 outline-none"></div>
+        </div>`).join('');
+}
 
-                return `
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col ${cardStyle}" id="card-comp-${comp.title}">
-                        <div class="px-5 py-4 bg-slate-50 border-b flex justify-between items-center">
-                            <h4 class="text-xs font-black uppercase italic">${comp.title}</h4>
-                            <span class="text-[8px] font-black uppercase px-2 py-1 bg-turbo-teal text-white rounded-md">${badgeText}</span>
-                        </div>
-                        <div class="p-5 flex-1">
-                            <div class="space-y-2 mb-6">
-                                ${comp.items.map(item => `
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" class="w-4 h-4 rounded border-slate-300 text-turbo-teal" data-service="${item}">
-                                        <span class="text-[11px] font-bold text-slate-600">${item}</span>
-                                    </label>`).join('')}
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button onclick="sendPieceToSector('${comp.title}', 'RETIFICA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-slate-100">Retífica</button>
-                                <button onclick="sendPieceToSector('${comp.title}', 'SOLDA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-slate-100">Solda</button>
-                                <button onclick="sendPieceToSector('${comp.title}', 'METROLOGIA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-slate-100">Metrologia</button>
-                                <button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-slate-100">Bancada</button>
-                                <button onclick="sendPieceToSector('${comp.title}', 'MONTAGEM', this)" class="col-span-2 py-3 bg-emerald-500 text-white text-[10px] font-black uppercase rounded-lg mt-2">Pronto p/ Montagem</button>
-                            </div>
-                        </div>
-                    </div>`;
-            }).join('');
-        }
+function renderComponentGrid() {
+    const grid = document.getElementById('component-grid');
+    grid.innerHTML = MASTER_COMPONENTS.map(comp => {
+        const trk = (currentSelection.tracking || []).find(t => t.component === comp.title);
+        const isRoteada = !!trk;
+        const cardStyle = isRoteada ? 'opacity-40 grayscale pointer-events-none' : '';
+        const badgeText = isRoteada ? `EM ${trk.stage}` : 'AGUARDANDO';
 
-        async function sendPieceToSector(pieceName, sector, btnElement) {
-            const card = document.getElementById('card-comp-' + pieceName);
-            const services = Array.from(card.querySelectorAll('input:checked')).map(c => c.dataset.service);
-            btnElement.disabled = true;
-            try {
-                const response = await fetch(API_ROUTING, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ os_id: currentSelection.id, component: pieceName, target: sector, executed_services: services })
-                });
-                if (response.ok) {
-                    card.classList.add('opacity-40', 'grayscale', 'pointer-events-none');
-                    btnElement.innerHTML = `<i class="fa-solid fa-check"></i> OK: ${sector}`;
-                } else { alert("Erro no servidor"); btnElement.disabled = false; }
-            } catch (e) { alert("Erro de conexão"); btnElement.disabled = false; }
-        }
+        return `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col ${cardStyle}" id="card-comp-${comp.title}">
+                <div class="px-5 py-4 bg-slate-50 border-b flex justify-between items-center">
+                    <h4 class="text-xs font-black uppercase italic">${comp.title}</h4>
+                    <span class="text-[8px] font-black uppercase px-2 py-1 bg-turbo-teal text-white rounded-md tracking-widest">${badgeText}</span>
+                </div>
+                <div class="p-5 flex-1 overflow-y-auto max-h-[300px]">
+                    <div class="space-y-2 mb-6">
+                        ${comp.items.map(item => {
+                            const isChecked = isRoteada && (trk.services || []).includes(item) ? 'checked' : '';
+                            return `<label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" ${isChecked} ${isRoteada ? 'disabled' : ''} class="w-4 h-4 rounded border-slate-300 text-turbo-teal" data-service="${item}">
+                                <span class="text-[10px] font-bold text-slate-600 uppercase">${item}</span>
+                            </label>`;
+                        }).join('')}
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-auto">
+                        <button onclick="sendPieceToSector('${comp.title}', 'RETIFICA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Retífica</button>
+                        <button onclick="sendPieceToSector('${comp.title}', 'SOLDA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Solda</button>
+                        <button onclick="sendPieceToSector('${comp.title}', 'METROLOGIA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Metrologia</button>
+                        <button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Bancada</button>
+                        <button onclick="sendPieceToSector('${comp.title}', 'MONTAGEM', this)" class="col-span-2 py-3 bg-emerald-500 text-white text-[10px] font-black uppercase rounded-lg mt-2">Pronto p/ Montagem</button>
+                    </div>
+                </div>
+            </div>`;
+    }).join('');
+}
 
-        async function handleAction(type) {
-            const btn = type === 'START' ? document.getElementById('btn-start') : document.querySelector('.bg-turbo-orange');
-            btn.disabled = true;
-            try {
-                const res = await fetch(API_ACTION, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ os_id: currentSelection.id, action: type })
-                });
-                if (res.ok) window.location.reload();
-            } catch (e) { console.error(e); }
-        }
+async function sendPieceToSector(pieceName, sector, btnElement) {
+    const card = document.getElementById('card-comp-' + pieceName);
+    const services = Array.from(card.querySelectorAll('input:checked')).map(c => c.dataset.service);
+    btnElement.disabled = true;
+    try {
+        const response = await fetch(API_ROUTING, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ os_id: currentSelection.id, component: pieceName, target: sector, executed_services: services })
+        });
+        if (response.ok) {
+            card.classList.add('opacity-40', 'grayscale', 'pointer-events-none');
+            btnElement.innerHTML = `<i class="fa-solid fa-check"></i> ENVIADO`;
+        } else { alert("Erro ao enviar"); btnElement.disabled = false; }
+    } catch (e) { alert("Falha na conexão"); btnElement.disabled = false; }
+}
+
+async function handleAction(type) {
+    const btn = type === 'START' ? document.getElementById('btn-start') : document.querySelector('.bg-turbo-orange');
+    btn.disabled = true;
+    try {
+        const res = await fetch(API_ACTION, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ os_id: currentSelection.id, action: type, user_id: USER_ID })
+        });
+        if (res.ok) window.location.reload();
+    } catch (e) { console.error(e); }
+}
+
+function updateSelectColor(el) {
+    const val = el.value;
+    el.classList.remove('bg-emerald-500', 'bg-yellow-500', 'bg-red-600');
+    if (val === 'PEÇA OK') el.classList.add('bg-emerald-500');
+    else if (val === 'RECONDICIONAR') el.classList.add('bg-yellow-500');
+    else if (val === 'TROCAR') el.classList.add('bg-red-600');
+}
     </script>
 </body>
 </html>
