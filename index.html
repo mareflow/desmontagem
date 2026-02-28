@@ -227,157 +227,81 @@
     </div>
 
     <script>
+<script>
         const API_QUEUE = 'https://webhook.mareflow.com.br/webhook/production/disassembly-queue';
         const API_ACTION = 'https://webhook.mareflow.com.br/webhook/production/disassembly-action';
-const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/component-routing';
+        const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/component-routing';
         const USER_ID = '8ab0d7ed-055c-4480-a1af-eb0b08894682';
 
         let currentSelection = null;
         let queueData = [];
 
-        // Inicialização
         document.addEventListener('DOMContentLoaded', () => {
             loadDisassemblyQueue();
-            // renderComponentGrid agora só será chamada ao selecionar uma OS
-            renderChecklists(); 
+            if (typeof renderChecklists === "function") renderChecklists(); 
         });
 
-        // Função para atualizar a cor do select dinamicamente
-        function updateSelectColor(el) {
-            const val = el.value;
-            // Reseta classes
-            el.classList.remove('bg-emerald-500', 'bg-yellow-500', 'bg-red-600', 'text-white');
-            
-            if (val === 'PEÇA OK') {
-                el.classList.add('bg-emerald-500', 'text-white');
-            } else if (val === 'RECONDICIONAR') {
-                el.classList.add('bg-yellow-500', 'text-white');
-            } else if (val === 'TROCAR') {
-                el.classList.add('bg-red-600', 'text-white');
-            }
-        }
-        function renderChecklists() {
-            const data = {
-                'tab-anexos': ['ABRAÇADEIRAS', 'MANGUEIRAS', 'FLANGES', 'CANOS', 'CALÇOS', 'COLETOR', 'PRISIONEIROS'],
-                'tab-geral': ['PARAFUSOS', 'CARCAÇA COMPRESSORA', 'CARCAÇA CENTRAL', 'ROTOR COMPRESSOR', 'EIXO ROTOR', 'PRATO COMPRESSOR', 'COLAR', 'ANEL ELÁSTICO', 'ATUADOR / VÁLVULA'],
-                'tab-caracol': ['TRINCAS (PAREDE)', 'ROSCAS / PRISIONEIROS', 'ASSENTO DA VÁLVULA', 'FACEAMENTO']
-            };
-
-            Object.keys(data).forEach(tabId => {
-                const container = document.getElementById(tabId);
-                container.innerHTML = data[tabId].map(item => `
-                    <div class="grid grid-cols-12 gap-3 items-center bg-white p-2 rounded-xl border border-slate-100 hover:border-turbo-teal transition-colors">
-                        <div class="col-span-4 text-[10px] font-black text-slate-700 ml-2 uppercase tracking-tight">${item}</div>
-                        <div class="col-span-3">
-                            <select onchange="updateSelectColor(this)" class="checklist-select w-full bg-emerald-500 text-white text-[9px] font-black py-2 rounded-lg uppercase text-center outline-none transition-colors duration-200">
-                                <option value="PEÇA OK">PEÇA OK</option>
-                                <option value="TROCAR">TROCAR</option>
-                                <option value="RECONDICIONAR">RECONDICIONAR</option>
-                            </select>
-                        </div>
-                        <div class="col-span-5">
-                            <input type="text" placeholder="Obs..." class="w-full bg-slate-700 text-white text-[10px] rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-turbo-teal">
-                        </div>
-                    </div>
-                `).join('');
-            });
-            
-            // Inicializa as cores (Padrão Verde)
-            document.querySelectorAll('.checklist-select').forEach(sel => updateSelectColor(sel));
-        }
-
-        // TAREFA: Validar e abrir o modal de serviço especial
-        function openSpecialModal() {
-            document.getElementById('modalSpecial').classList.remove('hidden');
-        }
-
-        function validateSpecialModal() {
-            const name = document.getElementById('special-item-name').value;
-            const btn = document.getElementById('btn-add-special');
-            if(name.length > 3) {
-                btn.disabled = false;
-                btn.classList.remove('bg-turbo-teal/40', 'cursor-not-allowed');
-                btn.classList.add('bg-turbo-teal');
-            } else {
-                btn.disabled = true;
-                btn.classList.add('bg-turbo-teal/40', 'cursor-not-allowed');
-            }
-        }
-
-        // Carregar Fila do Webhook
         async function loadDisassemblyQueue() {
             const listContainer = document.getElementById('os-list');
-            
             try {
                 const response = await fetch(API_QUEUE);
                 const result = await response.json();
                 
-                if (Array.isArray(result)) {
-                    queueData = result;
-                } else if (result && typeof result === 'object' && result.business_id) {
-                    queueData = [result];
-                } else {
-                    queueData = result.data || [];
-                }
-
-                listContainer.innerHTML = '';
-
-                if (queueData.length === 0) {
-                    listContainer.innerHTML = '<div class="p-10 text-center text-slate-400 text-xs font-medium">Nenhuma OS aguardando desmontagem.</div>';
-                    return;
-                }
-
-                queueData.forEach(os => {
-                    const urgencyText = os.urgency || 'Normal';
-                    const isUrgent = urgencyText === 'Alta' || urgencyText === 'Urgente';
-                    const urgencyClass = isUrgent ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600';
-                    
-                    const card = document.createElement('div');
-                    // Aqui está a mágica: Adicionamos as classes de Card e espaçamento
-                    card.className = 'os-card p-5 cursor-pointer hover:bg-slate-50 transition border-l-4 border-transparent bg-white rounded-xl shadow-sm mb-3 mx-4 mt-4';
-                    card.id = `card-${os.id}`;
-                    card.onclick = () => selectOS(os);
-                    
-                    card.innerHTML = `
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-sm font-black text-slate-900 tracking-tight">${os.business_id}</span>
-                            <span class="px-2 py-0.5 text-[9px] font-black uppercase rounded-md ${urgencyClass}">${urgencyText}</span>
-                        </div>
-                        <p class="text-[10px] font-black text-turbo-teal uppercase tracking-widest mb-1">MARCAÇÃO: ${os.os_number || 'NÃO DEFINIDO'}</p>
-                        <p class="text-xs font-bold text-slate-700 uppercase leading-tight mb-1">${os.model}</p>
-                        <p class="text-[10px] font-medium text-slate-500 uppercase truncate">${os.client}</p>
-                    `;
-                    listContainer.appendChild(card);
-                });
-
+                queueData = Array.isArray(result) ? result : (result.data || []);
+                renderSidebar();
             } catch (error) {
                 console.error("Erro ao carregar fila:", error);
-                listContainer.innerHTML = '<div class="p-10 text-center text-red-400 text-xs">Erro ao conectar com o servidor.</div>';
+                if (listContainer) listContainer.innerHTML = '<div class="p-10 text-center text-red-400 text-xs">Falha na conexão.</div>';
             }
         }
 
-        // Selecionar OS e atualizar Workspace
+        function renderSidebar() {
+            const listContainer = document.getElementById('os-list');
+            if (!listContainer) return;
+            listContainer.innerHTML = '';
+
+            if (queueData.length === 0) {
+                listContainer.innerHTML = '<div class="p-10 text-center text-slate-400 text-xs italic uppercase">Nenhuma OS na fila</div>';
+                return;
+            }
+
+            queueData.forEach(os => {
+                const urgencyText = os.urgency || 'Normal';
+                const isUrgent = urgencyText === 'Alta' || urgencyText === 'Urgente';
+                const urgencyClass = isUrgent ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600';
+                const isSelected = currentSelection?.id === os.id ? 'os-selected' : '';
+                
+                const card = document.createElement('div');
+                card.className = `os-card p-5 cursor-pointer hover:bg-slate-50 transition border-l-4 border-transparent bg-white rounded-xl shadow-sm mb-3 mx-4 mt-4 ${isSelected}`;
+                card.id = `card-${os.id}`;
+                card.onclick = () => selectOS(os);
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-sm font-black text-slate-900 tracking-tight">${os.business_id}</span>
+                        <span class="px-2 py-0.5 text-[9px] font-black uppercase rounded-md ${urgencyClass}">${urgencyText}</span>
+                    </div>
+                    <p class="text-[10px] font-black text-turbo-teal uppercase tracking-widest mb-1">MARCAÇÃO: ${os.os_number || 'NÃO DEFINIDO'}</p>
+                    <p class="text-xs font-bold text-slate-700 uppercase leading-tight mb-1">${os.model}</p>
+                    <p class="text-[10px] font-medium text-slate-500 uppercase truncate">${os.client}</p>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
         function selectOS(os) {
             currentSelection = os;
-
-            // 1. UI Sidebar (Marcação visual de seleção)
-            document.querySelectorAll('#os-list > div').forEach(c => c.classList.remove('os-selected'));
-            const selectedCard = document.getElementById(`card-${os.id}`);
-            if (selectedCard) selectedCard.classList.add('os-selected');
-
-            // 2. Workspace (Mostra a tela de trabalho)
+            renderSidebar();
+            
             document.getElementById('welcome-screen').classList.add('hidden');
             document.getElementById('main-workspace').classList.remove('hidden');
             document.getElementById('footer-actions').classList.remove('hidden');
-
-            // 3. Header (Preenche os dados da OS no painel azul)
+            
             document.getElementById('display-os').innerText = os.business_id;
             document.getElementById('display-desc').innerText = `${os.client} | ${os.model}`;
             
-            // 4. CHAMADA VITAL: Renderiza os 10 cards com a memória de rastreio (tracking)
             renderComponentGrid();
 
-            // 5. Ajustar botões de controle
             const btnStart = document.getElementById('btn-start');
             if (btnStart) {
                 btnStart.innerText = 'Iniciar Desmontagem';
@@ -385,89 +309,7 @@ const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/componen
             }
         }
 
-        // Enviar Ação (Iniciar/Concluir)
-        async function handleAction(type) {
-            if (!currentSelection) return;
-
-            const btn = type === 'START' ? document.getElementById('btn-start') : document.querySelector('.bg-turbo-orange');
-            const originalText = btn.innerText;
-            
-            btn.innerText = "Processando...";
-            btn.disabled = true;
-
-            const payload = {
-                os_id: currentSelection.id,
-                action: type,
-                target: 'REPAROS OFICINA',
-                user_id: USER_ID
-            };
-
-            try {
-                const response = await fetch(API_ACTION, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.ok) {
-                    document.getElementById('successMsg').innerText = type === 'START' 
-                        ? `Desmontagem da ${currentSelection.business_id} iniciada!` 
-                        : `Limpeza concluída. A ${currentSelection.business_id} foi liberada para reparos.`;
-                    
-                    document.getElementById('modalSuccess').classList.remove('hidden');
-                    
-                    if (type === 'FINISH') {
-                        document.getElementById('main-workspace').classList.add('hidden');
-                        document.getElementById('footer-actions').classList.add('hidden');
-                        document.getElementById('welcome-screen').classList.remove('hidden');
-                    }
-                    
-                    loadDisassemblyQueue();
-                } else {
-                    alert("Erro ao processar ação. Tente novamente.");
-                }
-            } catch (error) {
-                console.error("Erro no POST:", error);
-                alert("Falha na conexão com o servidor.");
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
-        }
-
-        // Roteamento (Visual)
-        function toggleRouting(btn) {
-            const parent = btn.parentElement;
-            // Se for o botão verde, ele é exclusivo
-            if (btn.innerText.includes('PRONTO')) {
-                parent.querySelectorAll('button').forEach(b => b.classList.remove('active-routing'));
-                btn.classList.add('active-routing');
-            } else {
-                // Outros botões podem ser múltiplos dependendo da regra, mas aqui simulamos toggle
-                btn.classList.toggle('active-routing');
-                // Remove o "Pronto" se clicar em um setor
-                const readyBtn = Array.from(parent.querySelectorAll('button')).find(b => b.innerText.includes('PRONTO'));
-                if (readyBtn) readyBtn.classList.remove('active-routing');
-            }
-        }
-
-        // Tabs
-        function switchTab(btn, tabId) {
-            const navButtons = btn.parentElement.querySelectorAll('button');
-            navButtons.forEach(b => b.classList.remove('tab-active'));
-            navButtons.forEach(b => b.classList.add('text-slate-400'));
-            btn.classList.add('tab-active');
-            btn.classList.remove('text-slate-400');
-
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            document.getElementById(tabId).classList.remove('hidden');
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).classList.add('hidden');
-        }
-
-function renderComponentGrid() {
+        function renderComponentGrid() {
             const grid = document.getElementById('component-grid');
             if (!grid || !currentSelection) return;
 
@@ -485,24 +327,20 @@ function renderComponentGrid() {
             ];
 
             grid.innerHTML = components.map(comp => {
-                // PULO DO GATO: Verifica se esta peça já consta no campo 'tracking' que veio do banco
-                const trackingData = (currentSelection.tracking || []).find(t => t.component === comp.title);
-                const isRoteada = !!trackingData;
+                const pecaNoRastreio = (currentSelection.tracking || []).find(t => t.component === comp.title);
+                const isRoteada = !!pecaNoRastreio;
 
-                // Estilos de bloqueio se a peça já "viajou"
                 const cardStyle = isRoteada ? 'opacity-40 grayscale pointer-events-none' : '';
-                const badgeText = isRoteada ? `EM ${trackingData.stage || trackingData.target}` : 'AGUARDANDO';
+                const badgeText = isRoteada ? `EM ${pecaNoRastreio.stage}` : 'AGUARDANDO';
                 const badgeColor = isRoteada ? 'bg-slate-500' : 'bg-turbo-teal';
 
                 const itemHtml = comp.items.map(item => {
-                    // Marca o checkbox se o serviço já estava salvo no banco
-                    const isChecked = isRoteada && (trackingData.services || []).includes(item) ? 'checked' : '';
+                    const isChecked = isRoteada && (pecaNoRastreio.executed_services || []).includes(item) ? 'checked' : '';
                     return `
                         <label class="flex items-center space-x-3 cursor-pointer group">
-                            <input type="checkbox" ${isChecked} ${isRoteada ? 'disabled' : ''} class="w-4 h-4 rounded-md border-slate-300 text-turbo-teal focus:ring-turbo-teal transition" data-service="${item}">
+                            <input type="checkbox" ${isChecked} ${isRoteada ? 'disabled' : ''} class="w-4 h-4 rounded-md border-slate-300 text-turbo-teal focus:ring-turbo-teal" data-service="${item}">
                             <span class="text-[11px] font-bold text-slate-600 group-hover:text-slate-900 transition">${item}</span>
-                        </label>
-                    `;
+                        </label>`;
                 }).join('');
 
                 return `
@@ -513,14 +351,56 @@ function renderComponentGrid() {
                         </div>
                         <div class="p-5 flex-1">
                             <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Serviços Realizados:</p>
-                            <div class="space-y-2.5 mb-8">
-                                ${itemHtml}
-                            </div>
+                            <div class="space-y-2.5 mb-8">${itemHtml}</div>
                             <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Encaminhar para:</p>
                             <div class="grid grid-cols-2 gap-2">
-                                <button onclick="sendPieceToSector('${comp.title}', 'RETIFICA', this)" class="py-2 border border-slate-200 bg-white text-[9px] font-black uppercase rounded-xl hover:bg-slate-50 transition">Retífica</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'RETIFICA', this)" class="py-2 border border-slate-200 bg-slate-50 text-[9px] font-black uppercase rounded-xl hover:bg-slate-50 transition">Retífica</button>
                                 <button onclick="sendPieceToSector('${comp.title}', 'SOLDA', this)" class="py-2 border border-slate-200 bg-white text-[9px] font-black uppercase rounded-xl hover:bg-slate-50 transition">Solda</button>
                                 <button onclick="sendPieceToSector('${comp.title}', 'METROLOGIA', this)" class="py-2 border border-slate-200 bg-white text-[9px] font-black uppercase rounded-xl hover:bg-slate-50 transition">Metrologia</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-2 border border-slate-200 bg-white text-[9px] font-black uppercase rounded-xl hover:bg-slate-50 transition">Bancada</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'MONTAGEM', this)" class="col-span-2 py-3 bg-emerald-500 text-white text-[10px] font-black uppercase rounded-xl hover:bg-emerald-600 transition mt-2">Pronto p/ Montagem</button>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        async function sendPieceToSector(pieceName, sector, btnElement) {
+            if (!currentSelection) return;
+            const card = document.getElementById('card-comp-' + pieceName);
+            const checks = card.querySelectorAll('input[type="checkbox"]:checked');
+            const services = Array.from(checks).map(c => c.dataset.service);
+
+            const originalText = btnElement.innerText;
+            btnElement.innerText = "ENVIANDO...";
+            btnElement.disabled = true;
+
+            try {
+                const response = await fetch(API_ROUTING, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ os_id: currentSelection.id, component: pieceName, target: sector, executed_services: services })
+                });
+
+                if (response.ok) {
+                    if (card) {
+                        card.classList.add('opacity-40', 'grayscale');
+                        card.style.pointerEvents = 'none';
+                    }
+                    btnElement.innerHTML = `<i class="fa-solid fa-check mr-1"></i> ENVIADO (${sector})`;
+                    btnElement.classList.add('bg-slate-800', 'text-white');
+                } else {
+                    alert("Erro ao rotear peça.");
+                    btnElement.innerText = originalText;
+                    btnElement.disabled = false;
+                }
+            } catch (error) {
+                console.error("Erro no roteamento:", error);
+                alert("Falha na conexão.");
+                btnElement.innerText = originalText;
+                btnElement.disabled = false;
+            }
+        }METROLOGIA', this)" class="py-2 border border-slate-200 bg-white text-[9px] font-black uppercase rounded-xl hover:bg-slate-50 transition">Metrologia</button>
                                 <button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-2 border border-slate-200 bg-white text-[9px] font-black uppercase rounded-xl hover:bg-slate-50 transition">Bancada</button>
                                 <button onclick="sendPieceToSector('${comp.title}', 'MONTAGEM', this)" class="col-span-2 py-3 bg-emerald-500 text-white text-[10px] font-black uppercase rounded-xl hover:bg-emerald-600 transition mt-2 shadow-lg shadow-emerald-50">Pronto p/ Montagem</button>
                             </div>
