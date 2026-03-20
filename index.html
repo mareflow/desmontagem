@@ -90,8 +90,17 @@
                     </div>
 
                     <div class="lg:w-96 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                        <h3 class="text-[10px] font-black uppercase text-turbo-teal mb-4 tracking-widest">Identificação e Marcação</h3>
-                        <div class="space-y-4">
+                        <h3 class="text-[10px] font-black uppercase text-orange-600 mb-4 tracking-widest">Veredito da Análise (Trocas)</h3>
+                        <div id="lista-trocas-analise" class="space-y-2 max-h-[120px] overflow-y-auto pr-2">
+                            <p class="text-[10px] text-slate-400 italic">Selecione uma OS para ver o que deve ser descartado.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IDENTIFICAÇÃO (Movido para baixo do Veredito) -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="text-[10px] font-black uppercase text-turbo-teal mb-4 tracking-widest">Identificação e Marcação</h3>
+                    <div class="space-y-4">
                             <select class="w-full input-clean text-sm rounded-xl px-4 py-3 font-bold">
                                 <option>Consumidor Final</option><option>Estoque DPS</option><option>Outros</option>
                             </select>
@@ -128,7 +137,12 @@
         </button>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        const SUPABASE_URL = 'https://zghaqlaqozsskfldgsfe.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpnaGFxbGFxb3pzc2tmbGRnc2ZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyMDY1MzQsImV4cCI6MjA4NDc4MjUzNH0.aC2DMOUNhS2uK6KGI5Sf2c2vGhrCKHMnRyZhL3WwSus';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         const API_QUEUE = 'https://webhook.mareflow.com.br/webhook/production/disassembly-queue';
         const API_ACTION = 'https://webhook.mareflow.com.br/webhook/production/disassembly-action';
         const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/component-routing';
@@ -188,6 +202,32 @@
             
             renderChecklists(); 
             renderComponentGrid(); 
+            carregarVereditoTroca(os.id);
+        }
+
+        async function carregarVereditoTroca(osId) {
+            const container = document.getElementById('lista-trocas-analise');
+            container.innerHTML = '<p class="text-[10px] text-turbo-teal animate-pulse font-bold uppercase">Buscando lista de descarte...</p>';
+
+            try {
+                // Importamos o Supabase aqui caso não esteja global
+                const { data, error } = await supabaseClient
+                    .from('checklist_analysis_general')
+                    .select('item_name, status')
+                    .eq('service_order_id', osId)
+                    .eq('status', 'TROCAR');
+
+                if (data && data.length > 0) {
+                    container.innerHTML = data.map(item => `
+                        <div class="flex items-center justify-between bg-red-50 p-2 rounded border border-red-100">
+                            <span class="text-[10px] font-black text-red-700 uppercase">${item.item_name}</span>
+                            <span class="text-[8px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black">LIXO / TROCAR</span>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-[10px] text-green-600 font-bold uppercase italic">Nenhuma peça para trocar. Tudo será aproveitado.</p>';
+                }
+            } catch (err) { container.innerHTML = ''; }
         }
 
         function renderChecklists() {
