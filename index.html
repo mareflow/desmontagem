@@ -289,8 +289,16 @@
                 const isSent = !!trk && setoresPosteriores.includes(trk.stage);
                 
                 const cardStyle = isSent ? 'opacity-40 grayscale pointer-events-none' : '';
+                
+                // Badge Dinâmico: Mostra o destino real da peça (Ex: EM RETÍFICA)
                 let badgeText = comp.isSpecial ? (comp.type === 'RETRABALHO' ? 'RETRABALHO' : 'ESPECIAL') : 'Desmontagem';
-                if(isSent) badgeText = `EM SETOR`;
+                if (isSent) {
+                    // Limpa nomes longos vindos do banco para caber no badge
+                    const destino = trk.stage.toUpperCase()
+                                     .replace('BANCADA DE USINAGEM', 'BANCADA')
+                                     .replace('TRIAGEM DE PRODUÇÃO', 'TRIAGEM');
+                    badgeText = `EM ${destino}`;
+                }
                 const badgeColor = isSent ? 'bg-slate-500' : (comp.type === 'RETRABALHO' ? 'bg-red-600' : 'bg-turbo-teal');
                 const itemHtml = comp.items.map(item => `<label class="flex items-center space-x-3 cursor-pointer group py-1.5"><input type="checkbox" ${isSent ? 'disabled' : ''} class="w-5 h-5 rounded border-slate-300 text-turbo-teal focus:ring-turbo-teal transition-all" data-service="${item}"><span class="text-xs font-bold text-slate-500 group-hover:text-slate-800 transition">${item}</span></label>`).join('');
                 return `<div class="bg-white rounded-3xl shadow-sm border-2 border-slate-100 flex flex-col p-6 ${cardStyle}" id="card-comp-${comp.title.replace(/\s+/g, '-')}"><div class="flex justify-between items-center mb-6"><h4 class="text-2xl font-black text-slate-800 tracking-tighter uppercase">${comp.title}</h4><span class="text-[10px] font-black uppercase px-4 py-1.5 ${badgeColor} text-white rounded-full tracking-widest">${badgeText}</span></div><div class="flex-1 flex flex-col"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 italic">CHECKLIST DE LIMPEZA/TRATAMENTO:</p><div class="space-y-1 mb-8">${itemHtml}</div><hr class="border-slate-100 mb-6"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">ENCAMINHAR PARA:</p><div class="grid grid-cols-2 gap-2"><button onclick="sendPieceToSector('${comp.title}', 'RETIFICA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Retífica</button><button onclick="sendPieceToSector('${comp.title}', 'SOLDA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Solda</button><button onclick="sendPieceToSector('${comp.title}', 'METROLOGIA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Metrologia</button><button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Bancada</button><button onclick="sendPieceToSector('${comp.title}', 'MONTAGEM', this)" class="col-span-2 py-4 bg-emerald-600 text-white text-[11px] font-black uppercase rounded-xl transition hover:bg-emerald-700 shadow-lg shadow-emerald-100 mt-2">Pronto p/ Montagem</button></div></div></div>`;
