@@ -282,7 +282,12 @@
             const allToRender = [...MASTER_COMPONENTS, ...specialItemsList];
             grid.innerHTML = allToRender.map(comp => {
                 const trk = (currentSelection.tracking || []).find(t => t.component === comp.title);
-                const isSent = !!trk && trk.stage !== 'Desmontagem';
+                
+                // NOVA REGRA: Só bloqueia (isSent) se a peça já estiver em um setor produtivo posterior.
+                // Se o estágio for 'Triagem de Produção' ou 'Desmontagem', ela ainda está disponível aqui.
+                const setoresPosteriores = ['RETIFICA', 'SOLDA', 'METROLOGIA', 'BANCADA', 'MONTAGEM', 'Bancada de Usinagem'];
+                const isSent = !!trk && setoresPosteriores.includes(trk.stage);
+                
                 const cardStyle = isSent ? 'opacity-40 grayscale pointer-events-none' : '';
                 let badgeText = comp.isSpecial ? (comp.type === 'RETRABALHO' ? 'RETRABALHO' : 'ESPECIAL') : 'Desmontagem';
                 if(isSent) badgeText = `EM SETOR`;
