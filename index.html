@@ -194,107 +194,68 @@ const ANALYSIS_ITEMS = {
             'tab3': ['Trinca Base Face ou Gases', 'Quebra Base Face', 'Espessura da Base Minima 9mm', 'Embuchamento da CT', 'Desgaste Saida Escape Flangeada', 'Desgaste Face Encaixe CCE', 'Trinca Face Assentamento CCE', 'Trinca Parede Lateral Protetor', 'Trinca ou Quebra da Voluta', 'Borboleta ou Moeda Folga', 'Bucha Guia Borboleta', 'Braco Wastegate', 'Pino de Centro', 'Assentamento Borboleta Moeda', 'Coletor Anexo', 'Plaina Coletor Uniao Biturbo', 'Empenamento Faces Alojamento', 'Necessita Gabarito Usinagem', 'Tipo de Solda']
         };
 
-        const MASTER_COMPONENTS = [
-            {title: 'CCE', items: ["ANÁLISE", "USINAR BORDA QUENTE", "USINAR BORDA FRIA", "LIXAR", "CONCENT.", "COLO MANCAL", "EMBUCHAR", "CANAL VITON", "STEPBOARD", "ADAPTAÇÃO", "ROSCAS", "TRANSFORMAÇÃO ROSCAS", "ROSCAS POSTIÇAS", "FRESAMENTO"]},
-            {title: 'CCO', items: ["ANÁLISE", "ROSCAS", "ROSCAS POSTIÇAS", "EMBUCHAMENTO", "SOB MEDIDA", "ABERTURA DE TRINCAS", "RETIRAR PARAFUSOS", "ADAPTAÇÃO ENCAIXE PRATO", "ADAPTAÇÃO BOCAL ADMISSÃO", "ADAPTAÇÃO BOCAL FILTRO"]},
-            {title: 'CT', items: ["FACEAMENTO PÉ/ MESA", "FACEAMENTO SAÍDA", "REMOVER WASTEGATES", "MONTAR WASTEGATE", "FRESAMENTO DA MOEDA", "ACENTAMENTO DA CCE", "ADAPTAÇÃO DE BORDA", "EMBUCHAMENTO SAÍDA"]},
-            {title: 'EIXO', items: ["ANÁLISE", "DESEMPENO", "ABERTURA CAVA", "USINAGEM", "ABERTURA ANEL", "RETIFICA", "ROSCA EIXO", "FACEAMENTO", "FURO CENTRO", "TRANSFORMAR", "POLIMENTO EIXO"]},
-            {title: 'ROTOR', items: ["ANÁLISE", "FACEAMENTO / PORCA", "TRANSFORMAÇÃO", "EMBUCHAMENTO ROTOR", "FACEAMENTO DE PALHETAS"]},
-            {title: 'COLETOR', items: ["ROSCAS", "ROSCAS POSTIÇAS", "FRESAMENTO", "ABERTURA DE TRINCAS", "FRESAMENTO DE COLETOR - FACE 1", "FRESAMENTO DE COLETOR - FACE 2", "FRESAMENTO FACE EGR"]},
-            {title: 'REPAROS', items: ["FABRICAÇÃO MANCAL R.", "FABRICAÇÃO MANCAL A.", "PASSE EXTERNO M. RADIAL", "PASSE INTERNO M. RADIAL", "FACEAMENTO M. RADIAL", "PASSE NA FLANGE", "ADAPTAÇÃO DE FLANGE", "SOLDA PROT. TÉRMICO", "PRODUZIR PROT. TÉRMICO", "FABRICAÇÃO ESPAÇADOR R.", "FABRICAÇÃO COLAR", "CALÇO DE ALTURA"]},
-            {title: 'GEOMETRIA', items: ["SERVIÇO GERAL RETÍFICA", "DESMONTAGEM/LIMPEZA", "CONFERÊNCIA"]},
-            {title: 'ATUADOR', items: ["SERVIÇO GERAL RETÍFICA", "TESTE ELETRÔNICO", "TROCA DE ENGRENAGENS"]},
-            {title: 'ANEXOS', items: ["SERVIÇO GERAL RETÍFICA", "REVISÃO DE ACESSÓRIOS"]}
+const MASTER_COMPONENTS = [
+            {title: 'CCO', items: ["Limpeza Química / Neoclar", "Queima", "Graxear", "Vibro / Tombamento"]},
+            {title: 'CT', items: ["Limpeza Química / Neoclar", "Queima", "Graxear"]},
+            {title: 'EIXO', items: ["Graxear", "Rotor", "Graxear"]},
+            {title: 'GEOMETRIA', items: ["Graxear", "Lavagem no Diesel"]},
+            {title: 'ATUADOR', items: ["Graxear"]},
+            {title: 'REPAROS', items: ["Lavagem no Diesel", "Graxear"]},
+            {title: 'ANEXOS', items: ["Lavagem", "Graxear", "Queima", "Vibro / Tombamento"]},
+            {title: 'ROTOR', items: ["Limpeza Química", "Balanceamento"]},
+            {title: 'COLETOR', items: ["Jateamento", "Planeamento"]}
         ];
-
-        document.addEventListener('DOMContentLoaded', loadDisassemblyQueue);
-
-        async function loadDisassemblyQueue() {
-            const listContainer = document.getElementById('os-list');
-            try {
-                const response = await fetch(API_QUEUE);
-                const result = await response.json();
-                queueData = Array.isArray(result) ? result : (result.data || []);
-                listContainer.innerHTML = '';
-                if (queueData.length === 0) {
-                    listContainer.innerHTML = '<div class="p-10 text-center text-slate-400 text-xs italic">Fila Vazia.</div>';
-                    return;
-                }
-                queueData.forEach(os => {
-                    const card = document.createElement('div');
-                    card.className = 'os-card p-5 cursor-pointer hover:bg-slate-50 transition border-l-4 border-transparent bg-white rounded-xl shadow-sm mb-3 mx-4 mt-4';
-                    card.id = `card-${os.id}`;
-                    card.onclick = () => selectOS(os);
-                    card.innerHTML = `<div class="flex justify-between items-start mb-2"><span class="text-sm font-black text-slate-900">${os.business_id}</span><span class="px-2 py-0.5 text-[9px] font-black uppercase rounded-md bg-blue-100 text-blue-600">${os.urgency || 'Normal'}</span></div><p class="text-xs font-bold text-slate-700 uppercase mb-1">${os.model}</p><p class="text-[10px] font-medium text-slate-500 uppercase truncate">${os.client}</p>`;
-                    listContainer.appendChild(card);
-                });
-            } catch (e) { console.error("Erro Fila:", e); }
-        }
-
-        function selectOS(os) {
-            currentSelection = os;
-            document.querySelectorAll('#os-list > div').forEach(c => c.classList.remove('os-selected'));
-            document.getElementById(`card-${os.id}`)?.classList.add('os-selected');
-            document.getElementById('welcome-screen').classList.add('hidden');
-            document.getElementById('main-workspace').classList.remove('hidden');
-            document.getElementById('footer-actions').classList.remove('hidden');
-            document.getElementById('display-os').innerText = os.business_id;
-            document.getElementById('display-desc').innerText = `${os.client} | ${os.model}`;
-            renderChecklists(); 
-            renderComponentGrid(); 
-        }
-
-        function renderChecklists() {
-            Object.keys(ANALYSIS_ITEMS).forEach(tabId => {
-                const container = document.getElementById(tabId);
-                if (!container) return;
-                let html = '';
-                if (tabId === 'tab3') {
-                    html += `<div class="p-3 mb-3 border border-red-200 rounded-xl bg-red-50/50 flex items-center space-x-3"><input type="checkbox" id="condenar-caracol-global" onchange="condenarTudoCaracol(this)" class="w-5 h-5 text-red-600 border-red-300 rounded focus:ring-red-500"><label for="condenar-caracol-global" class="text-[10px] font-black text-red-700 uppercase">CONDENAR CARACOL COMPLETO (TROCAR)</label></div>`;
-                }
-                html += ANALYSIS_ITEMS[tabId].map(item => `
-                    <div class="grid grid-cols-12 gap-3 items-center bg-white p-2 border-b border-slate-50 hover:bg-slate-50 transition">
-                        <div class="col-span-5 text-[10px] font-bold text-slate-600 uppercase tracking-tighter ml-2">${item}</div>
-                        <div class="col-span-3">
-                            <select onchange="updateSelectColor(this)" class="w-full bg-slate-400 text-white text-[9px] font-black py-1.5 rounded-lg uppercase text-center outline-none">
-                                <option value="NÃO INFORMADO">NÃO INFORMADO</option>
-                                <option value="PEÇA OK">PEÇA OK</option>
-                                <option value="RECONDICIONAR">RECONDICIONAR</option>
-                                <option value="TROCAR">TROCAR</option>
-                            </select>
-                        </div>
-                        <div class="col-span-4"><input type="text" placeholder="Obs..." class="w-full bg-slate-100 text-slate-500 text-[10px] rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-turbo-teal"></div>
-                    </div>`).join('');
-                container.innerHTML = html;
-            });
-
-            // Listener de abas idêntico ao análise
-            document.querySelectorAll('.tab-button-disassembly').forEach(btn => {
-                btn.onclick = () => {
-                    document.querySelectorAll('.tab-content-disassembly').forEach(c => c.classList.add('hidden'));
-                    document.querySelectorAll('.tab-button-disassembly').forEach(b => {
-                        b.classList.remove('text-turbo-teal', 'border-b-2', 'border-turbo-teal', 'font-bold');
-                        b.classList.add('text-gray-500', 'font-medium');
-                    });
-                    document.getElementById(btn.dataset.tab).classList.remove('hidden');
-                    btn.classList.add('text-turbo-teal', 'border-b-2', 'border-turbo-teal', 'font-bold');
-                    btn.classList.remove('text-gray-500', 'font-medium');
-                };
-            });
-        }
 
         function renderComponentGrid() {
             const grid = document.getElementById('component-grid');
-            grid.innerHTML = MASTER_COMPONENTS.map(comp => {
+            if (!grid || !currentSelection) return;
+
+            // Une componentes fixos com eventuais itens especiais da sessão
+            const allToRender = [...MASTER_COMPONENTS, ...(window.specialItemsList || [])];
+
+            grid.innerHTML = allToRender.map(comp => {
+                // Lógica de Bloqueio: Só fica cinza se foi enviado NESTA sessão ou se o estágio já mudou
                 const trk = (currentSelection.tracking || []).find(t => t.component === comp.title);
-                const isRoteada = !!trk;
-                const cardStyle = isRoteada ? 'opacity-40 grayscale pointer-events-none' : '';
-                const badgeText = isRoteada ? `EM SETOR` : 'AGUARDANDO';
-                const itemHtml = comp.items.map(item => {
-                    const isChecked = isRoteada && (trk.services || []).includes(item) ? 'checked' : '';
-                    return `<label class="flex items-center space-x-2 p-1"><input type="checkbox" ${isChecked} ${isRoteada ? 'disabled' : ''} class="w-4 h-4 rounded border-slate-300 text-turbo-teal" data-service="${item}"><span class="text-[10px] font-bold text-slate-600 uppercase">${item}</span></label>`;
-                }).join('');
-                return `<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col ${cardStyle}" id="card-comp-${comp.title}"><div class="px-5 py-4 bg-slate-50 border-b flex justify-between items-center"><h4 class="text-xs font-black uppercase text-slate-800">${comp.title}</h4><span class="text-[8px] font-black uppercase px-2 py-1 ${isRoteada ? 'bg-slate-500' : 'bg-turbo-teal'} text-white rounded-md">${badgeText}</span></div><div class="p-5 flex-1 flex flex-col"><div class="overflow-y-auto max-h-[160px] space-y-1 mb-6">${itemHtml}</div><div class="grid grid-cols-2 gap-2 mt-auto"><button onclick="sendPieceToSector('${comp.title}', 'RETIFICA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-turbo-teal hover:text-white transition">Retífica</button><button onclick="sendPieceToSector('${comp.title}', 'SOLDA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-turbo-teal hover:text-white transition">Solda</button><button onclick="sendPieceToSector('${comp.title}', 'METROLOGIA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-turbo-teal hover:text-white transition">Metrologia</button><button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-2 border text-[9px] font-black uppercase rounded-lg hover:bg-turbo-teal hover:text-white transition">Bancada</button><button onclick="sendPieceToSector('${comp.title}', 'MONTAGEM', this)" class="col-span-2 py-3 bg-emerald-500 text-white text-[10px] font-black uppercase rounded-lg transition hover:bg-emerald-600">Pronto p/ Montagem</button></div></div></div>`;
+                const isSent = !!trk && trk.stage !== 'Desmontagem';
+                
+                const cardStyle = isSent ? 'opacity-40 grayscale pointer-events-none' : '';
+                const badgeText = isSent ? `EM ${trk.stage || 'SETOR'}` : 'Desmontagem';
+                const badgeColor = isSent ? 'bg-slate-500' : 'bg-turbo-teal';
+
+                const itemHtml = comp.items.map(item => `
+                    <label class="flex items-center space-x-3 cursor-pointer group py-1.5">
+                        <input type="checkbox" ${isSent ? 'disabled' : ''} 
+                            class="w-5 h-5 rounded border-slate-300 text-turbo-teal focus:ring-turbo-teal transition-all" 
+                            data-service="${item}">
+                        <span class="text-xs font-bold text-slate-500 group-hover:text-slate-800 transition">${item}</span>
+                    </label>
+                `).join('');
+
+                return `
+                    <div class="bg-white rounded-3xl shadow-sm border-2 border-slate-100 overflow-hidden flex flex-col p-6 ${cardStyle}" id="card-comp-${comp.title.replace(/\s+/g, '-')}">
+                        <div class="flex justify-between items-center mb-6">
+                            <h4 class="text-2xl font-black text-slate-800 tracking-tighter uppercase">${comp.title}</h4>
+                            <span class="text-[10px] font-black uppercase px-4 py-1.5 ${badgeColor} text-white rounded-full tracking-widest">${badgeText}</span>
+                        </div>
+                        
+                        <div class="flex-1 flex flex-col">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">CHECKLIST DE LIMPEZA/TRATAMENTO:</p>
+                            <div class="space-y-1 mb-8">
+                                ${itemHtml}
+                            </div>
+                            
+                            <hr class="border-slate-100 mb-6">
+                            
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">ENCAMINHAR PARA:</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="sendPieceToSector('${comp.title}', 'RETIFICA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Retífica</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'SOLDA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Solda</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'METROLOGIA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Metrologia</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Bancada</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'MONTAGEM', this)" class="col-span-2 py-4 bg-emerald-600 text-white text-[11px] font-black uppercase rounded-xl transition hover:bg-emerald-700 shadow-lg shadow-emerald-100 mt-2">Pronto p/ Montagem</button>
+                            </div>
+                        </div>
+                    </div>`;
             }).join('');
         }
 
