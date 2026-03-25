@@ -78,22 +78,12 @@
             <div id="main-workspace" class="hidden space-y-6">
                 <!-- TOP INFO -->
                 <div class="flex flex-col lg:flex-row gap-6">
-                    <div class="flex-1 bg-turbo-teal rounded-2xl shadow-lg text-white p-6 min-h-[160px] flex flex-col justify-between relative overflow-hidden">
-                        <div class="relative z-10">
-                            <h2 id="display-os" class="text-3xl font-black mb-1 italic">OS-XXXX</h2>
+                    <div class="flex-1 bg-turbo-teal rounded-2xl shadow-lg text-white p-6 min-h-[120px] flex flex-col justify-center relative overflow-hidden">
+                        <div class="relative z-10 ml-4">
+                            <h2 id="display-os" class="text-3xl font-black mb-1 italic tracking-tighter">OS-XXXX</h2>
                             <p id="display-desc" class="text-sm font-medium opacity-90 uppercase tracking-widest italic">CLIENTE | MODELO</p>
                         </div>
-                        <div class="flex space-x-3 relative z-10">
-                            <button onclick="handleAction('START')" id="btn-start" class="bg-white text-turbo-teal px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-100 transition shadow-md">Iniciar Desmontagem</button>
-                        </div>
                         <i class="fa-solid fa-gear absolute right-[-20px] bottom-[-20px] text-white opacity-10 text-9xl"></i>
-                    </div>
-
-                    <div class="lg:w-96 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                        <h3 class="text-[10px] font-black uppercase text-orange-600 mb-4 tracking-widest">Veredito da Análise (Trocas)</h3>
-                        <div id="lista-trocas-analise" class="space-y-2 max-h-[120px] overflow-y-auto pr-2">
-                            <p class="text-[10px] text-slate-400 italic">Selecione uma OS para ver o que deve ser descartado.</p>
-                        </div>
                     </div>
                 </div>
 
@@ -214,7 +204,6 @@ const ANALYSIS_ITEMS = {
             document.getElementById('display-desc').innerText = `${os.client} | ${os.model}`;
             renderChecklists(); 
             renderComponentGrid(); 
-            carregarVereditoTroca(os.id);
         }
 
         function renderChecklists() {
@@ -293,15 +282,7 @@ const ANALYSIS_ITEMS = {
             document.getElementById(tabId).classList.remove('hidden');
         }
 
-        async function carregarVereditoTroca(osId) {
-            const container = document.getElementById('lista-trocas-analise');
-            try {
-                const { data } = await supabaseClient.from('checklist_analysis_general').select('item_name, status').eq('service_order_id', osId).eq('status', 'TROCAR');
-                if (data && data.length > 0) {
-                    container.innerHTML = data.map(item => `<div class="flex items-center justify-between bg-red-50 p-2 rounded border border-red-100 mb-1"><span class="text-[10px] font-black text-red-700 uppercase">${item.item_name}</span><span class="text-[8px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black">LIXO</span></div>`).join('');
-                } else { container.innerHTML = '<p class="text-[10px] text-green-600 font-bold uppercase italic">Sem trocas.</p>'; }
-            } catch (err) { container.innerHTML = ''; }
-        }
+        
 
         async function sendPieceToSector(pieceName, sector, btnElement) {
             const card = document.getElementById('card-comp-' + pieceName);
