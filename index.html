@@ -155,10 +155,10 @@
         const API_ROUTING = 'https://webhook.mareflow.com.br/webhook/production/component-routing';
         const USER_ID = '8ab0d7ed-055c-4480-a1af-eb0b08894682';
 
-        let currentSelection = null;
+let currentSelection = null;
         let queueData = [];
 
-const ANALYSIS_ITEMS = {
+        const ANALYSIS_ITEMS = {
             tabAnexos: [
                 'Travas CCO', 'Travas CT', 'Parafuso CT Flangeado', 'Parafuso CCO Flangeado', 'Cano Retorno Parafusos', 
                 'Adaptador Lubrificação', 'Nipel de Lubrificação', 'Cano Lubrificação com Nipel', 'Atuador Pressão', 
@@ -206,9 +206,66 @@ const ANALYSIS_ITEMS = {
             {title: 'ANEXOS', items: ["SERVIÇO GERAL RETÍFICA", "REVISÃO DE ACESSÓRIOS"]}
         ];
 
+        document.addEventListener('DOMContentLoaded', loadDisassemblyQueue);
+
+        async function loadDisassemblyQueue() {
+            try {
+                const response = await fetch(API_QUEUE);
+                const result = await response.json();
+                queueData = Array.isArray(result) ? result : (result.data || []);
+                renderSidebar();
+            } catch (error) { console.error("Erro na Fila:", error); }
+        }
+
+        function renderSidebar() {
+            const listContainer = document.getElementById('os-list');
+            listContainer.innerHTML = '';
+            queueData.forEach(os => {
+                const isSelected = currentSelection?.id === os.id ? 'os-selected' : '';
+                const card = document.createElement('div');
+                card.className = `p-5 cursor-pointer border-l-4 border-transparent bg-white rounded-xl shadow-sm mb-3 mx-4 mt-4 transition-all hover:bg-slate-50 ${isSelected}`;
+                card.onclick = () => selectOS(os);
+                card.innerHTML = `<div class="flex justify-between">
+                    <span class="text-sm font-black text-slate-900">${os.business_id}</span>
+                    <span class="text-[9px] font-bold px-2 py-0.5 rounded uppercase bg-blue-100 text-blue-600">${os.urgency || 'Normal'}</span>
+                </div><p class="text-xs text-slate-500 font-medium uppercase mt-1 truncate">${os.client} | ${os.model}</p>`;
+                listContainer.appendChild(card);
+            });
+        }
+
+        function selectOS(os) {
+            currentSelection = os;
+            renderSidebar();
+            document.getElementById('welcome-screen').classList.add('hidden');
+            document.getElementById('main-workspace').classList.remove('hidden');
+            document.getElementById('footer-actions').classList.remove('hidden');
+            document.getElementById('display-os').innerText = os.business_id;
+            document.getElementById('display-desc').innerText = `${os.client} | ${os.model}`;
+            
+            renderChecklists(); 
+            renderComponentGrid(); 
+            carregarVereditoTroca(os.id);
+        }
+
+        async function carregarVereditoTroca(osId) {
+            const container = document.getElementById('lista-trocas-analise');
+            container.innerHTML = '<p class="text-[10px] text-turbo-teal animate-pulse font-bold uppercase">Buscando lista de descarte...</p>';
+            try {
+                const { data } = await supabaseClient.from('checklist_analysis_general').select('item_name, status').eq('service_order_id', osId).eq('status', 'TROCAR');
+                if (data && data.length > 0) {
+                    container.innerHTML = data.map(item => `
+                        <div class="flex items-center justify-between bg-red-50 p-2 rounded border border-red-100 mb-1">
+                            <span class="text-[10px] font-black text-red-700 uppercase">${item.item_name}</span>
+                            <span class="text-[8px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black">LIXO / TROCAR</span>
+                        </div>`).join('');
+                } else {
+                    container.innerHTML = '<p class="text-[10px] text-green-600 font-bold uppercase italic">Nenhuma peça para trocar.</p>';
+                }
+            } catch (err) { container.innerHTML = ''; }
+        }
+
         function renderChecklists() {
             const createContent = (tabKey) => ANALYSIS_ITEMS[tabKey].map(item => createDisassemblyRow(item)).join('');
-            
             document.getElementById('tab-anexos').innerHTML = createContent('tabAnexos');
             document.getElementById('tab-geral').innerHTML = createContent('tabGeral');
             document.getElementById('tab-caracol').innerHTML = createContent('tabCaracol');
@@ -238,7 +295,7 @@ const ANALYSIS_ITEMS = {
                             <option value="TROCAR">TROCAR</option>
                         </select>
                     </div>
-                    <div class="col-span-3"><input type="text" placeholder="Obs..." class="w-full bg-slate-100 text-slate-600 text-[9px] font-medium rounded-md px-2 py-1.5 outline-none border border-transparent focus:border-slate-200"></div>
+                    <div class="col-span-3"><input type="text" placeholder="Obs..." class="w-full bg-slate-100 text-slate-600 text-[9px] font-medium rounded-md px-2 py-1.5 outline-none border border-transparent"></div>
                 </div>`;
         }
 
@@ -274,7 +331,7 @@ const ANALYSIS_ITEMS = {
                                 <button onclick="sendPieceToSector('${comp.title}', 'SOLDA', this)" class="py-2 border border-slate-200 text-[9px] font-black uppercase rounded-lg hover:bg-turbo-teal hover:text-white transition">Solda</button>
                                 <button onclick="sendPieceToSector('${comp.title}', 'METROLOGIA', this)" class="py-2 border border-slate-200 text-[9px] font-black uppercase rounded-lg hover:bg-turbo-teal hover:text-white transition">Metrologia</button>
                                 <button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-2 border border-slate-200 text-[9px] font-black uppercase rounded-lg hover:bg-turbo-teal hover:text-white transition">Bancada</button>
-                                <button onclick="sendPieceToSector('${comp.title}', 'MONTAGEM', this)" class="col-span-2 py-3 bg-emerald-500 text-white text-[10px] font-black uppercase rounded-lg mt-2 shadow-lg shadow-emerald-50 transition hover:bg-emerald-600">Pronto p/ Montagem</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'MONTAGEM', this)" class="col-span-2 py-3 bg-emerald-500 text-white text-[10px] font-black uppercase rounded-lg mt-2 transition hover:bg-emerald-600">Pronto p/ Montagem</button>
                             </div>
                         </div>
                     </div>`;
@@ -295,8 +352,8 @@ const ANALYSIS_ITEMS = {
                     card.classList.add('opacity-40', 'grayscale', 'pointer-events-none');
                     btnElement.innerHTML = `<i class="fa-solid fa-check"></i> ENVIADO`;
                     btnElement.classList.add('bg-slate-800', 'text-white');
-                } else { alert("Erro ao enviar"); btnElement.disabled = false; }
-            } catch (e) { alert("Falha na conexão"); btnElement.disabled = false; }
+                } else { btnElement.disabled = false; }
+            } catch (e) { btnElement.disabled = false; }
         }
 
         async function handleAction(type) {
@@ -314,20 +371,6 @@ const ANALYSIS_ITEMS = {
                 }
             } catch (e) { console.error(e); }
             finally { btn.disabled = false; }
-        }
 
-        function updateSelectColor(el) {
-            const val = el.value;
-            el.classList.remove('bg-emerald-500', 'bg-yellow-500', 'bg-red-600');
-            if (val === 'PEÇA OK') el.classList.add('bg-emerald-500');
-            else if (val === 'RECONDICIONAR') el.classList.add('bg-yellow-500');
-            else if (val === 'TROCAR') el.classList.add('bg-red-600');
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).classList.add('hidden');
-            if (id === 'modalSuccess' && currentSelection) window.location.reload();
-        }
-    </script>
 </body>
 </html>
