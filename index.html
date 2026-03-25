@@ -79,9 +79,14 @@
                 <!-- TOP INFO -->
                 <div class="flex flex-col lg:flex-row gap-6">
                     <div class="flex-1 bg-turbo-teal rounded-2xl shadow-lg text-white p-6 min-h-[120px] flex flex-col justify-center relative overflow-hidden">
-                        <div class="relative z-10 ml-4">
-                            <h2 id="display-os" class="text-3xl font-black mb-1 italic tracking-tighter">OS-XXXX</h2>
-                            <p id="display-desc" class="text-sm font-medium opacity-90 uppercase tracking-widest italic">CLIENTE | MODELO</p>
+                        <div class="relative z-10 ml-4 flex justify-between items-center w-full pr-8">
+                            <div>
+                                <h2 id="display-os" class="text-3xl font-black mb-1 italic tracking-tighter uppercase">OS-XXXX</h2>
+                                <p id="display-desc" class="text-sm font-medium opacity-90 uppercase tracking-widest italic">CLIENTE | MODELO</p>
+                            </div>
+                            <button type="button" onclick="openSpecialModal()" class="bg-white/20 hover:bg-white/30 text-white border border-white/40 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                                + Adicionar Serviço Especial
+                            </button>
                         </div>
                         <i class="fa-solid fa-gear absolute right-[-20px] bottom-[-20px] text-white opacity-10 text-9xl"></i>
                     </div>
@@ -127,7 +132,40 @@
         </main>
     </div>
 
-    <!-- FOOTER -->
+    <!-- MODAL SERVIÇO ESPECIAL -->
+    <div id="modalSpecial" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border-t-8 border-turbo-teal">
+            <div class="px-8 py-6 border-b flex justify-between items-center bg-slate-50">
+                <h3 class="font-black text-slate-800 uppercase text-lg tracking-tighter">Adicionar Serviço Especial</h3>
+                <button onclick="closeModal('modalSpecial')" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-8 space-y-6">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Nome do Item / Processo</label>
+                    <input type="text" id="special-item-name" oninput="validateSpecialModal()" placeholder="EX: CARCAÇA EXTRA, COMPONENTE PERSONALIZADO..." class="w-full bg-slate-100 border-2 border-transparent focus:border-turbo-teal rounded-2xl px-5 py-4 text-sm font-bold outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Tipo de Peça</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="flex items-center p-4 border-2 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all border-turbo-teal bg-teal-50/30" id="label-padrao">
+                            <input type="radio" name="special-type" value="PADRAO" checked class="hidden" onchange="toggleRadioStyle()">
+                            <div class="w-4 h-4 rounded-full border-2 border-turbo-teal flex items-center justify-center mr-3"><div class="w-2 h-2 bg-turbo-teal rounded-full"></div></div>
+                            <span class="text-[10px] font-black text-turbo-teal uppercase tracking-tighter">Peça Padrão</span>
+                        </label>
+                        <label class="flex items-center p-4 border-2 border-slate-100 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all" id="label-retrabalho">
+                            <input type="radio" name="special-type" value="RETRABALHO" class="hidden" onchange="toggleRadioStyle()">
+                            <div class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center mr-3"></div>
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Retrabalho</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="flex space-x-3 pt-6 border-t">
+                    <button onclick="closeModal('modalSpecial')" class="flex-1 bg-slate-100 text-slate-400 font-black py-4 rounded-2xl uppercase text-xs tracking-widest hover:bg-slate-200">Cancelar</button>
+                    <button id="btn-add-special" disabled onclick="addSpecialCard()" class="flex-[2] bg-turbo-teal/40 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest cursor-not-allowed shadow-lg transition-all">Adicionar Card</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="footer-actions" class="fixed bottom-0 right-0 p-8 z-30 hidden">
         <button onclick="handleAction('FINISH')" class="bg-turbo-orange hover:bg-orange-700 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-sm shadow-2xl transition-all transform hover:-translate-y-1">
             Concluir Limpeza e Liberar OS
@@ -313,7 +351,115 @@ const ANALYSIS_ITEMS = {
             selects.forEach(sel => { sel.value = check.checked ? 'TROCAR' : 'NÃO INFORMADO'; updateSelectColor(sel); });
         }
 
+        // Memória temporária para itens especiais da OS selecionada
+        let specialItemsList = [];
+
+        function openSpecialModal() {
+            document.getElementById('special-item-name').value = '';
+            validateSpecialModal();
+            document.getElementById('modalSpecial').classList.remove('hidden');
+        }
+
+        function toggleRadioStyle() {
+            const isRetrabalho = document.querySelector('input[name="special-type"]:checked').value === 'RETRABALHO';
+            const lp = document.getElementById('label-padrao');
+            const lr = document.getElementById('label-retrabalho');
+            
+            if(isRetrabalho) {
+                lr.classList.add('border-turbo-teal', 'bg-teal-50/30');
+                lr.querySelector('div').innerHTML = '<div class="w-2 h-2 bg-turbo-teal rounded-full"></div>';
+                lp.classList.remove('border-turbo-teal', 'bg-teal-50/30');
+                lp.querySelector('div').innerHTML = '';
+            } else {
+                lp.classList.add('border-turbo-teal', 'bg-teal-50/30');
+                lp.querySelector('div').innerHTML = '<div class="w-2 h-2 bg-turbo-teal rounded-full"></div>';
+                lr.classList.remove('border-turbo-teal', 'bg-teal-50/30');
+                lr.querySelector('div').innerHTML = '';
+            }
+        }
+
+        function validateSpecialModal() {
+            const name = document.getElementById('special-item-name').value;
+            const btn = document.getElementById('btn-add-special');
+            if(name.length >= 3) {
+                btn.disabled = false;
+                btn.className = 'flex-[2] bg-turbo-teal text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest shadow-lg hover:bg-teal-700 transition-all cursor-pointer';
+            } else {
+                btn.disabled = true;
+                btn.className = 'flex-[2] bg-turbo-teal/40 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest cursor-not-allowed';
+            }
+        }
+
+        function addSpecialCard() {
+            const name = document.getElementById('special-item-name').value.toUpperCase();
+            const type = document.querySelector('input[name="special-type"]:checked').value;
+            
+            const newCard = {
+                title: name,
+                type: type,
+                items: ["Limpeza Química / Neoclar", "Queima", "Graxear", "Vibro / Tombamento"],
+                isSpecial: true
+            };
+
+            specialItemsList.push(newCard);
+            closeModal('modalSpecial');
+            renderComponentGrid(); // Re-renderiza o grid com o novo item
+        }
+
+        // Modifica o renderComponentGrid para incluir os itens especiais
+        const originalRenderComponentGrid = renderComponentGrid;
+        renderComponentGrid = function() {
+            const grid = document.getElementById('component-grid');
+            if (!grid) return;
+
+            // Combina os componentes mestres com os especiais criados no momento
+            const allComponentsToRender = [...MASTER_COMPONENTS, ...specialItemsList];
+
+            grid.innerHTML = allComponentsToRender.map(comp => {
+                const trk = (currentSelection.tracking || []).find(t => t.component === comp.title);
+                const isRoteada = !!trk;
+                const cardStyle = isRoteada ? 'opacity-40 grayscale pointer-events-none' : '';
+                
+                // Badge inteligente
+                let badgeText = comp.isSpecial ? (comp.type === 'RETRABALHO' ? 'RETRABALHO' : 'ESPECIAL') : 'AGUARDANDO';
+                if(isRoteada) badgeText = `EM SETOR`;
+                
+                const badgeColor = isRoteada ? 'bg-slate-500' : (comp.type === 'RETRABALHO' ? 'bg-red-600' : 'bg-turbo-teal');
+
+                const itemHtml = comp.items.map(item => {
+                    const isChecked = isRoteada && (trk.services || []).includes(item) ? 'checked' : '';
+                    return `<label class="flex items-center space-x-2 p-1 cursor-pointer hover:bg-slate-50 rounded transition"><input type="checkbox" ${isChecked} ${isRoteada ? 'disabled' : ''} class="w-4 h-4 rounded border-slate-300 text-turbo-teal" data-service="${item}"><span class="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">${item}</span></label>`;
+                }).join('');
+
+                return `
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col ${cardStyle}" id="card-comp-${comp.title.replace(/\s+/g, '-')}">
+                        <div class="px-5 py-4 bg-slate-50 border-b flex justify-between items-center">
+                            <h4 class="text-xs font-black uppercase text-slate-800 italic">${comp.title}</h4>
+                            <span class="text-[8px] font-black uppercase px-2 py-1 ${badgeColor} text-white rounded-md tracking-widest shadow-sm">${badgeText}</span>
+                        </div>
+                        <div class="p-5 flex-1 flex flex-col">
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 italic">Checklist Limpeza/Tratamento:</p>
+                            <div class="overflow-y-auto max-h-[160px] space-y-1 mb-6 pr-1">${itemHtml}</div>
+                            <div class="grid grid-cols-2 gap-2 mt-auto">
+                                <button onclick="sendPieceToSector('${comp.title}', 'RETIFICA', this)" class="py-2 border border-slate-100 text-[9px] font-black uppercase rounded-xl hover:bg-turbo-teal hover:text-white transition shadow-sm bg-white">Retífica</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'SOLDA', this)" class="py-2 border border-slate-100 text-[9px] font-black uppercase rounded-xl hover:bg-turbo-teal hover:text-white transition shadow-sm bg-white">Solda</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'METROLOGIA', this)" class="py-2 border border-slate-100 text-[9px] font-black uppercase rounded-xl hover:bg-turbo-teal hover:text-white transition shadow-sm bg-white">Metrologia</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-2 border border-slate-100 text-[9px] font-black uppercase rounded-xl hover:bg-turbo-teal hover:text-white transition shadow-sm bg-white">Bancada</button>
+                                <button onclick="sendPieceToSector('${comp.title}', 'MONTAGEM', this)" class="col-span-2 py-3 bg-emerald-500 text-white text-[10px] font-black uppercase rounded-xl transition hover:bg-emerald-600 shadow-md shadow-emerald-50">Pronto p/ Montagem</button>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+        };
+
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        
+        // Limpar lista especial ao trocar de OS
+        const originalSelectOS = selectOS;
+        selectOS = function(os) {
+            specialItemsList = []; // Reseta a lista de itens temporários
+            originalSelectOS(os);
+        };
     </script>
 </body>
 </html>
