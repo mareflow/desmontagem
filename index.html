@@ -145,7 +145,7 @@
     </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
+<script>
         // 1. CONFIGURAÇÕES E CONEXÕES
         const SUPABASE_URL = 'https://zghaqlaqozsskfldgsfe.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpnaGFxbGFxb3pzc2tmbGRnc2ZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyMDY1MzQsImV4cCI6MjA4NDc4MjUzNH0.aC2DMOUNhS2uK6KGI5Sf2c2vGhrCKHMnRyZhL3WwSus';
@@ -159,42 +159,72 @@
         let currentSelection = null;
         let queueData = [];
 
-        // 2. BANCO DE DADOS DE ITENS (SINCRO COM ANÁLISE TÉCNICA)
-const ANALYSIS_ITEMS = {
-            'tab-anexos': [
-                'Travas CCO', 'Travas CT', 'Parafuso CT Flangeado', 'Parafuso CCO Flangeado', 'Cano Retorno Parafusos', 
-                'Adaptador Lubrificação', 'Nipel de Lubrificação', 'Cano Lubrificação com Nipel', 'Atuador Pressão', 
-                'Atuador Vácuo', 'Atuador Vácuo Eletrônico', 'Atuador Eletrônico com Haste', 'Suporte Atuador Eletrônico', 
-                'Calço Atuador', 'Chapa de Proteção Atuador', 'Parafusos Suporte Atuador', 'Parafusos Chapa Proteção', 
-                'Mangueira na CCO', 'Prisioneiro Saída', 'Prisioneiro Pé Mesa CT', 'Prisioneiro CCE', 'Parafuso CCE', 
-                'Prisioneiro CCO', 'Prisioneiro Especial Longo', 'Saída de Escape', 'Flange Saída CT', 'Chapa de Proteção CT', 
-                'Freio Motor', 'Chapa de Proteção Saída', 'Nipel Fixo na CCO', 'Nipel Roscado na CCO', 'Nipel com Parafuso OCO', 
-                'Olhal', 'Parafuso OCO', 'Coletor', 'Cinta CT CCE', 'Cinta CCO', 'Cinta Saída', 'Flange Pé Mesa CT', 
-                'Cano Admissão CCO', 'Cano Admissão Motor', 'Cano de Água', 'Valvula Prioritária', 'Valvula Solenóide', 
-                'Sonda Temp Pressão', 'Sensor PVF', 'Bocal Plástico Biturbo', 'Tampão CT', 'Arruela Plástica Biturbo', 
-                'Bocal Alumínio Biturbo', 'Luva Borracha Biturbo', 'Cano Ligação Alumínio', 'Capa Alumínio Biturbo', 
-                'Peça Alumínio com Mola', 'Juntas', 'Almofada Amianto Saída', 'Mangueira Atuador', 'Conexão T', 
-                'Defletor Admissão com Trava', 'Abraçadeiras', 'Capa Protetiva Alumínio', 'Nipel de Retorno', 
-                'Mangueira de Retorno', 'Suporte CT', 'Anel Cano Retorno', 'Parafuso União Biturbo', 'Valvula Pressão Partida', 
-                'Oring', 'Valvula Sensor Partida', 'Mangueira Bocal Alumínio'
-            ],
-            'tab-geral': [
-                'Mancal Radial', 'Mancal Encosto', 'Flange', 'Colar', 'Espaçador', 'Calço Arruela', 
-                'Defletor de Óleo', 'Protetor Térmico', 'Travas de Mancal CCE', 'Trava Aranha Mancal', 'Trava de Flange', 
-                'Calço de Altura no Rotor', 'Porca do Eixo', 'Almofada Vedação Eixo', 'Almofada Vedação Caracol', 
-                'Arruela Metálica Vedação', 'Geometria Variável TGV', 'Flange da TGV', 'Viton', 'Aneis Vedação Flange TGV', 
-                'Anel Assentamento Valvula Biturbo'
-            ],
-            'tab-caracol': [
-                'Trinca Base Face ou Gases', 'Quebra Base Face', 'Espessura da Base Minima 9mm', 'Embuchamento da CT', 
-                'Desgaste Saida Escape Flangeada', 'Desgaste Face Encaixe CCE', 'Trinca Face Assentamento CCE', 
-                'Trinca Parede Lateral Protetor', 'Trinca ou Quebra da Voluta', 'Borboleta ou Moeda Folga', 
-                'Bucha Guia Borboleta', 'Braco Wastegate', 'Pino de Centro', 'Assentamento Borboleta Moeda', 
-                'Coletor Anexo', 'Plaina Coletor Uniao Biturbo', 'Empenamento Faces Alojamento', 'Necessita Gabarito Usinagem', 
-                'Tipo de Solda'
-            ]
+        // 2. BANCO DE DADOS DE ITENS (IDENTICO AO ANALISE TECNICA - 110 ITENS)
+        const ANALYSIS_ITEMS = {
+            'tab-anexos': ['Travas CCO', 'Travas CT', 'Parafuso CT Flangeado', 'Parafuso CCO Flangeado', 'Cano Retorno Parafusos', 'Adaptador Lubrificação', 'Nipel de Lubrificação', 'Cano Lubrificação com Nipel', 'Atuador Pressão', 'Atuador Vácuo', 'Atuador Vácuo Eletrônico', 'Atuador Eletrônico com Haste', 'Suporte Atuador Eletrônico', 'Calço Atuador', 'Chapa de Proteção Atuador', 'Parafusos Suporte Atuador', 'Parafusos Chapa Proteção', 'Mangueira na CCO', 'Prisioneiro Saída', 'Prisioneiro Pé Mesa CT', 'Prisioneiro CCE', 'Parafuso CCE', 'Prisioneiro CCO', 'Prisioneiro Especial Longo', 'Saída de Escape', 'Flange Saída CT', 'Chapa de Proteção CT', 'Freio Motor', 'Chapa de Proteção Saída', 'Nipel Fixo na CCO', 'Nipel Roscado na CCO', 'Nipel com Parafuso OCO', 'Olhal', 'Parafuso OCO', 'Coletor', 'Cinta CT CCE', 'Cinta CCO', 'Cinta Saída', 'Flange Pé Mesa CT', 'Cano Admissão CCO', 'Cano Admissão Motor', 'Cano de Água', 'Valvula Prioritária', 'Valvula Solenóide', 'Sonda Temp Pressão', 'Sensor PVF', 'Bocal Plástico Biturbo', 'Tampão CT', 'Arruela Plástica Biturbo', 'Bocal Alumínio Biturbo', 'Luva Borracha Biturbo', 'Cano Ligação Alumínio', 'Capa Alumínio Biturbo', 'Peça Alumínio com Mola', 'Juntas', 'Almofada Amianto Saída', 'Mangueira Atuador', 'Conexão T', 'Defletor Admissão com Trava', 'Abraçadeiras', 'Capa Protetiva Alumínio', 'Nipel de Retorno', 'Mangueira de Retorno', 'Suporte CT', 'Anel Cano Retorno', 'Parafuso União Biturbo', 'Valvula Pressão Partida', 'Oring', 'Valvula Sensor Partida', 'Mangueira Bocal Alumínio'],
+            'tab-geral': ['Mancal Radial', 'Mancal Encosto', 'Flange', 'Colar', 'Espaçador', 'Calço Arruela', 'Defletor de Óleo', 'Protetor Térmico', 'Travas de Mancal CCE', 'Trava Aranha Mancal', 'Trava de Flange', 'Calço de Altura no Rotor', 'Porca do Eixo', 'Almofada Vedação Eixo', 'Almofada Vedação Caracol', 'Arruela Metálica Vedação', 'Geometria Variável TGV', 'Flange da TGV', 'Viton', 'Aneis Vedação Flange TGV', 'Anel Assentamento Valvula Biturbo'],
+            'tab-caracol': ['Trinca Base Face ou Gases', 'Quebra Base Face', 'Espessura da Base Minima 9mm', 'Embuchamento da CT', 'Desgaste Saida Escape Flangeada', 'Desgaste Face Encaixe CCE', 'Trinca Face Assentamento CCE', 'Trinca Parede Lateral Protetor', 'Trinca ou Quebra da Voluta', 'Borboleta ou Moeda Folga', 'Bucha Guia Borboleta', 'Braco Wastegate', 'Pino de Centro', 'Assentamento Borboleta Moeda', 'Coletor Anexo', 'Plaina Coletor Uniao Biturbo', 'Empenamento Faces Alojamento', 'Necessita Gabarito Usinagem', 'Tipo de Solda']
         };
 
+        const MASTER_COMPONENTS = [
+            {title: 'CCE', items: ["ANÁLISE", "USINAR BORDA QUENTE", "USINAR BORDA FRIA", "LIXAR", "CONCENT.", "COLO MANCAL", "EMBUCHAR", "CANAL VITON", "STEPBOARD", "ADAPTAÇÃO", "ROSCAS", "TRANSFORMAÇÃO ROSCAS", "ROSCAS POSTIÇAS", "FRESAMENTO"]},
+            {title: 'CCO', items: ["ANÁLISE", "ROSCAS", "ROSCAS POSTIÇAS", "EMBUCHAMENTO", "SOB MEDIDA", "ABERTURA DE TRINCAS", "RETIRAR PARAFUSOS", "ADAPTAÇÃO ENCAIXE PRATO", "ADAPTAÇÃO BOCAL ADMISSÃO", "ADAPTAÇÃO BOCAL FILTRO"]},
+            {title: 'CT', items: ["FACEAMENTO PÉ/ MESA", "FACEAMENTO SAÍDA", "REMOVER WASTEGATES", "MONTAR WASTEGATE", "FRESAMENTO DA MOEDA", "ACENTAMENTO DA CCE", "ADAPTAÇÃO DE BORDA", "EMBUCHAMENTO SAÍDA"]},
+            {title: 'EIXO', items: ["ANÁLISE", "DESEMPENO", "ABERTURA CAVA", "USINAGEM", "ABERTURA ANEL", "RETIFICA", "ROSCA EIXO", "FACEAMENTO", "FURO CENTRO", "TRANSFORMAR", "POLIMENTO EIXO"]},
+            {title: 'ROTOR', items: ["ANÁLISE", "FACEAMENTO / PORCA", "TRANSFORMAÇÃO", "EMBUCHAMENTO ROTOR", "FACEAMENTO DE PALHETAS"]},
+            {title: 'COLETOR', items: ["ROSCAS", "ROSCAS POSTIÇAS", "FRESAMENTO", "ABERTURA DE TRINCAS", "FRESAMENTO DE COLETOR - FACE 1", "FRESAMENTO DE COLETOR - FACE 2", "FRESAMENTO FACE EGR"]},
+            {title: 'REPAROS', items: ["FABRICAÇÃO MANCAL R.", "FABRICAÇÃO MANCAL A.", "PASSE EXTERNO M. RADIAL", "PASSE INTERNO M. RADIAL", "FACEAMENTO M. RADIAL", "PASSE NA FLANGE", "ADAPTAÇÃO DE FLANGE", "SOLDA PROT. TÉRMICO", "PRODUZIR PROT. TÉRMICO", "FABRICAÇÃO ESPAÇADOR R.", "FABRICAÇÃO COLAR", "CALÇO DE ALTURA"]},
+            {title: 'GEOMETRIA', items: ["SERVIÇO GERAL RETÍFICA", "DESMONTAGEM/LIMPEZA", "CONFERÊNCIA"]},
+            {title: 'ATUADOR', items: ["SERVIÇO GERAL RETÍFICA", "TESTE ELETRÔNICO", "TROCA DE ENGRENAGENS"]},
+            {title: 'ANEXOS', items: ["SERVIÇO GERAL RETÍFICA", "REVISÃO DE ACESSÓRIOS"]}
+        ];
+
+        // 3. FUNÇÕES DE CARREGAMENTO E SIDEBAR
+        document.addEventListener('DOMContentLoaded', loadDisassemblyQueue);
+
+        async function loadDisassemblyQueue() {
+            const listContainer = document.getElementById('os-list');
+            try {
+                const response = await fetch(API_QUEUE);
+                const result = await response.json();
+                queueData = Array.isArray(result) ? result : (result.data || []);
+                listContainer.innerHTML = '';
+                if (queueData.length === 0) {
+                    listContainer.innerHTML = '<div class="p-10 text-center text-slate-400 text-xs italic">Fila Vazia.</div>';
+                    return;
+                }
+                queueData.forEach(os => {
+                    const card = document.createElement('div');
+                    card.className = 'os-card p-5 cursor-pointer hover:bg-slate-50 transition border-l-4 border-transparent bg-white rounded-xl shadow-sm mb-3 mx-4 mt-4';
+                    card.id = `card-${os.id}`;
+                    card.onclick = () => selectOS(os);
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-sm font-black text-slate-900">${os.business_id}</span>
+                            <span class="px-2 py-0.5 text-[9px] font-black uppercase rounded-md bg-blue-100 text-blue-600">${os.urgency || 'Normal'}</span>
+                        </div>
+                        <p class="text-xs font-bold text-slate-700 uppercase mb-1">${os.model}</p>
+                        <p class="text-[10px] font-medium text-slate-500 uppercase truncate">${os.client}</p>`;
+                    listContainer.appendChild(card);
+                });
+            } catch (e) { console.error("Erro Fila:", e); }
+        }
+
+        function selectOS(os) {
+            currentSelection = os;
+            document.querySelectorAll('#os-list > div').forEach(c => c.classList.remove('os-selected'));
+            document.getElementById(`card-${os.id}`)?.classList.add('os-selected');
+            document.getElementById('welcome-screen').classList.add('hidden');
+            document.getElementById('main-workspace').classList.remove('hidden');
+            document.getElementById('footer-actions').classList.remove('hidden');
+            document.getElementById('display-os').innerText = os.business_id;
+            document.getElementById('display-desc').innerText = `${os.client} | ${os.model}`;
+            renderChecklists(); 
+            renderComponentGrid(); 
+            carregarVereditoTroca(os.id);
+        }
+
+        // 4. CHECKLIST E COMPONENTES
         function renderChecklists() {
             Object.keys(ANALYSIS_ITEMS).forEach(tabId => {
                 const container = document.getElementById(tabId);
@@ -204,16 +234,11 @@ const ANALYSIS_ITEMS = {
                             <div class="col-span-5 text-[10px] font-black text-slate-700 uppercase tracking-tighter ml-2">${item}</div>
                             <div class="col-span-3">
                                 <select onchange="updateSelectColor(this)" class="w-full bg-emerald-500 text-white text-[9px] font-black py-2 rounded-lg uppercase text-center outline-none">
-                                    <option value="PEÇA OK">PEÇA OK</option>
-                                    <option value="TROCAR">TROCAR</option>
-                                    <option value="RECONDICIONAR">RECONDICIONAR</option>
+                                    <option value="PEÇA OK">PEÇA OK</option><option value="TROCAR">TROCAR</option><option value="RECONDICIONAR">RECONDICIONAR</option>
                                 </select>
                             </div>
-                            <div class="col-span-4">
-                                <input type="text" placeholder="Obs..." class="w-full bg-slate-700 text-white text-[10px] rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-turbo-teal">
-                            </div>
-                        </div>
-                    `).join('');
+                            <div class="col-span-4"><input type="text" placeholder="Obs..." class="w-full bg-slate-700 text-white text-[10px] rounded-lg px-3 py-2 outline-none"></div>
+                        </div>`).join('');
                 }
             });
         }
@@ -224,18 +249,15 @@ const ANALYSIS_ITEMS = {
                 const trk = (currentSelection.tracking || []).find(t => t.component === comp.title);
                 const isRoteada = !!trk;
                 const cardStyle = isRoteada ? 'opacity-40 grayscale pointer-events-none' : '';
-                const badgeText = isRoteada ? `EM ${trk.stage || 'TRANSITO'}` : 'AGUARDANDO';
-                
                 const itemHtml = comp.items.map(item => {
                     const isChecked = isRoteada && (trk.services || []).includes(item) ? 'checked' : '';
                     return `<label class="flex items-center space-x-2 p-1"><input type="checkbox" ${isChecked} ${isRoteada ? 'disabled' : ''} class="w-4 h-4 rounded border-slate-300 text-turbo-teal" data-service="${item}"><span class="text-[10px] font-bold text-slate-600 uppercase">${item}</span></label>`;
                 }).join('');
-
                 return `
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col ${cardStyle}" id="card-comp-${comp.title}">
                         <div class="px-5 py-4 bg-slate-50 border-b flex justify-between items-center">
                             <h4 class="text-xs font-black uppercase text-slate-800">${comp.title}</h4>
-                            <span class="text-[8px] font-black uppercase px-2 py-1 ${isRoteada ? 'bg-slate-500' : 'bg-turbo-teal'} text-white rounded-md">${badgeText}</span>
+                            <span class="text-[8px] font-black uppercase px-2 py-1 ${isRoteada ? 'bg-slate-500' : 'bg-turbo-teal'} text-white rounded-md">${isRoteada ? 'EM SETOR' : 'AGUARDANDO'}</span>
                         </div>
                         <div class="p-5 flex-1 flex flex-col">
                             <div class="overflow-y-auto max-h-[160px] space-y-1 mb-6">${itemHtml}</div>
@@ -251,17 +273,25 @@ const ANALYSIS_ITEMS = {
             }).join('');
         }
 
+        // 5. AÇÕES E AUXILIARES
+        async function carregarVereditoTroca(osId) {
+            const container = document.getElementById('lista-trocas-analise');
+            try {
+                const { data } = await supabaseClient.from('checklist_analysis_general').select('item_name, status').eq('service_order_id', osId).eq('status', 'TROCAR');
+                if (data && data.length > 0) {
+                    container.innerHTML = data.map(item => `<div class="flex items-center justify-between bg-red-50 p-2 rounded border border-red-100 mb-1"><span class="text-[10px] font-black text-red-700 uppercase">${item.item_name}</span><span class="text-[8px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black">LIXO</span></div>`).join('');
+                } else { container.innerHTML = '<p class="text-[10px] text-green-600 font-bold uppercase italic">Sem trocas.</p>'; }
+            } catch (err) { container.innerHTML = ''; }
+        }
+
         async function sendPieceToSector(pieceName, sector, btnElement) {
             const card = document.getElementById('card-comp-' + pieceName);
             const services = Array.from(card.querySelectorAll('input:checked')).map(c => c.dataset.service);
             btnElement.disabled = true;
             try {
                 const response = await fetch(API_ROUTING, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ os_id: currentSelection.id, component: pieceName, target: sector, executed_services: services }) });
-                if (response.ok) {
-                    card.classList.add('opacity-40', 'grayscale', 'pointer-events-none');
-                    btnElement.innerHTML = `<i class="fa-solid fa-check"></i> ENVIADO`;
-                    btnElement.classList.add('bg-slate-800', 'text-white');
-                } else { btnElement.disabled = false; }
+                if (response.ok) { card.classList.add('opacity-40', 'grayscale', 'pointer-events-none'); btnElement.innerHTML = `ENVIADO`; } 
+                else { btnElement.disabled = false; }
             } catch (e) { btnElement.disabled = false; }
         }
 
@@ -270,9 +300,9 @@ const ANALYSIS_ITEMS = {
             btn.disabled = true;
             try {
                 const res = await fetch(API_ACTION, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ os_id: currentSelection.id, action: type, user_id: USER_ID }) });
-                if (res.ok) {
-                    document.getElementById('modalSuccess').classList.remove('hidden');
-                    document.getElementById('successMsg').innerText = type === 'START' ? "Desmontagem Iniciada!" : "Limpeza Concluída!";
+                if (res.ok) { 
+                    document.getElementById('modalSuccess').classList.remove('hidden'); 
+                    if(type === 'FINISH') window.location.reload();
                 }
             } catch (e) { console.error(e); }
             finally { btn.disabled = false; }
@@ -289,16 +319,12 @@ const ANALYSIS_ITEMS = {
         function switchTab(btn, tabId) {
             const navButtons = btn.parentElement.querySelectorAll('button');
             navButtons.forEach(b => b.classList.remove('tab-active', 'text-turbo-orange'));
-            navButtons.forEach(b => b.classList.add('text-slate-400'));
             btn.classList.add('tab-active', 'text-turbo-orange');
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.getElementById(tabId).classList.remove('hidden');
         }
 
-        function closeModal(id) {
-            document.getElementById(id).classList.add('hidden');
-            if (id === 'modalSuccess') window.location.reload();
-        }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     </script>
 </body>
 </html>
