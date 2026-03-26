@@ -441,14 +441,51 @@ function openSpecialModal() {
         }
 
         async function sendPieceToSector(pieceName, sector, btnElement) {
-            const card = document.getElementById('card-comp-' + pieceName.replace(/\s+/g, '-'));
+            const cardId = 'card-comp-' + pieceName.replace(/\s+/g, '-');
+            const card = document.getElementById(cardId);
             const services = Array.from(card.querySelectorAll('input:checked')).map(c => c.dataset.service);
+            
+            const originalText = btnElement.innerHTML;
             btnElement.disabled = true;
+            btnElement.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i>`;
+
             try {
-                const response = await fetch(API_ROUTING, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ os_id: currentSelection.id, component: pieceName, target: sector, executed_services: services }) });
-                if (response.ok) { card.classList.add('opacity-40', 'grayscale', 'pointer-events-none'); btnElement.innerHTML = `ENVIADO`; }
-                else { btnElement.disabled = false; }
-            } catch (e) { btnElement.disabled = false; }
+                const response = await fetch(API_ROUTING, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ 
+                        os_id: currentSelection.id, 
+                        component: pieceName, 
+                        target: sector, 
+                        executed_services: services 
+                    }) 
+                });
+
+                if (response.ok) {
+                    // ATUALIZAÇÃO DE ESTADO EM TEMPO REAL:
+                    // Adiciona ou atualiza a peça no rastreio da OS na memória do navegador
+                    if (!currentSelection.tracking) currentSelection.tracking = [];
+                    
+                    let trk = currentSelection.tracking.find(t => t.component === pieceName);
+                    if (trk) {
+                        trk.stage = sector;
+                    } else {
+                        currentSelection.tracking.push({ component: pieceName, stage: sector });
+                    }
+
+                    // Redesenha o grid de componentes para aplicar o novo badge e as cores
+                    renderComponentGrid();
+                    
+                    console.log(`${pieceName} movido para ${sector}`);
+                } else {
+                    throw new Error("Erro no servidor");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Falha ao rotear peça. Tente novamente.");
+                btnElement.disabled = false;
+                btnElement.innerHTML = originalText;
+            }
         }
 
         async function handleAction(type) {
