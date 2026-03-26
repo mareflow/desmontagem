@@ -147,7 +147,18 @@
             <div class="p-8 space-y-6">
                 <div>
                     <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Nome do Item / Processo</label>
-                    <input type="text" id="special-item-name" oninput="validateSpecialModal()" placeholder="EX: CARCAÇA EXTRA, COMPONENTE PERSONALIZADO..." class="w-full bg-slate-100 border-2 border-transparent focus:border-turbo-teal rounded-2xl px-5 py-4 text-sm font-bold outline-none transition-all">
+                    <input type="text" id="special-item-name" oninput="validateSpecialModal()" placeholder="EX: CARCAÇA EXTRA..." class="w-full bg-slate-100 border-2 border-transparent focus:border-turbo-teal rounded-2xl px-5 py-3 text-sm font-bold outline-none transition-all">
+                </div>
+
+                <!-- NOVO: Checklist Dinâmico no Modal -->
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Checklist Customizado</label>
+                    <div id="dynamic-checklist-container" class="space-y-2 max-h-40 overflow-y-auto pr-2">
+                        <div class="flex items-center space-x-2">
+                            <input type="text" placeholder="Ex: Lavagem Química" class="special-checklist-input flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:border-turbo-teal">
+                            <button onclick="addChecklistItemLine()" class="text-turbo-teal hover:text-teal-700 p-2"><i class="fa-solid fa-circle-plus text-xl"></i></button>
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Tipo de Peça</label>
@@ -339,25 +350,61 @@
         }
 
         // 5. AÇÕES E MODAIS
-        function openSpecialModal() { document.getElementById('special-item-name').value = ''; validateSpecialModal(); document.getElementById('modalSpecial').classList.remove('hidden'); }
-        
+function openSpecialModal() { 
+            document.getElementById('special-item-name').value = ''; 
+            // Reseta o container para apenas uma linha vazia
+            document.getElementById('dynamic-checklist-container').innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <input type="text" placeholder="Ex: Lavagem Química" class="special-checklist-input flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:border-turbo-teal">
+                    <button onclick="addChecklistItemLine()" class="text-turbo-teal hover:text-teal-700 p-2"><i class="fa-solid fa-circle-plus text-xl"></i></button>
+                </div>`;
+            validateSpecialModal(); 
+            document.getElementById('modalSpecial').classList.remove('hidden'); 
+        }
+
+        function addChecklistItemLine() {
+            const container = document.getElementById('dynamic-checklist-container');
+            const div = document.createElement('div');
+            div.className = 'flex items-center space-x-2';
+            div.innerHTML = `
+                <input type="text" placeholder="Novo item..." class="special-checklist-input flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:border-turbo-teal">
+                <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 p-2"><i class="fa-solid fa-circle-minus text-xl"></i></button>
+            `;
+            container.appendChild(div);
+        }
+
         function validateSpecialModal() {
             const name = document.getElementById('special-item-name').value;
             const btn = document.getElementById('btn-add-special');
-            if(name.length >= 3) { btn.disabled = false; btn.className = 'flex-[2] bg-turbo-teal text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest shadow-lg cursor-pointer'; }
-            else { btn.disabled = true; btn.className = 'flex-[2] bg-turbo-teal/40 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest cursor-not-allowed'; }
-        }
-
-        function toggleRadioStyle() {
-            const isR = document.querySelector('input[name="special-type"]:checked').value === 'RETRABALHO';
-            document.getElementById('label-retrabalho').className = isR ? 'flex items-center p-4 border-2 rounded-2xl cursor-pointer bg-teal-50/30 border-turbo-teal' : 'flex items-center p-4 border-2 border-slate-100 rounded-2xl cursor-pointer';
-            document.getElementById('label-padrao').className = !isR ? 'flex items-center p-4 border-2 rounded-2xl cursor-pointer bg-teal-50/30 border-turbo-teal' : 'flex items-center p-4 border-2 border-slate-100 rounded-2xl cursor-pointer';
+            if(name.length >= 3) { 
+                btn.disabled = false; 
+                btn.className = 'flex-[2] bg-turbo-teal text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest shadow-lg cursor-pointer'; 
+            } else { 
+                btn.disabled = true; 
+                btn.className = 'flex-[2] bg-turbo-teal/40 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest cursor-not-allowed'; 
+            }
         }
 
         function addSpecialCard() {
             const name = document.getElementById('special-item-name').value.toUpperCase();
             const type = document.querySelector('input[name="special-type"]:checked').value;
-            specialItemsList.push({ title: name, type: type, items: ["Limpeza Química / Neoclar", "Queima", "Graxear", "Vibro / Tombamento"], isSpecial: true });
+            
+            // Coleta os itens do checklist dinâmico
+            const inputs = document.querySelectorAll('.special-checklist-input');
+            const customItems = Array.from(inputs)
+                .map(input => input.value.trim())
+                .filter(val => val !== '');
+
+            // Se o cara não digitou nada no checklist, usa um padrão ou avisa
+            if (customItems.length === 0) customItems.push("Serviço Geral");
+
+            specialItemsList.push({ 
+                title: name, 
+                type: type, 
+                items: customItems, 
+                isSpecial: true 
+            });
+
             closeModal('modalSpecial');
             renderComponentGrid();
         }
