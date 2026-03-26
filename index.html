@@ -163,15 +163,17 @@
                 <div>
                     <label class="block text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Tipo de Peça</label>
                     <div class="grid grid-cols-2 gap-4">
-                        <label class="flex items-center p-4 border-2 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all border-turbo-teal bg-teal-50/30" id="label-padrao">
-                            <input type="radio" name="special-type" value="PADRAO" checked class="hidden" onchange="toggleRadioStyle()">
-                            <div class="w-4 h-4 rounded-full border-2 border-turbo-teal flex items-center justify-center mr-3"><div class="w-2 h-2 bg-turbo-teal rounded-full"></div></div>
-                            <span class="text-[10px] font-black text-turbo-teal uppercase tracking-tighter">Peça Padrão</span>
+                        <!-- PEÇA PADRÃO -->
+                        <label for="radio-padrao" id="label-padrao" class="flex items-center p-4 border-2 border-turbo-teal bg-teal-50 rounded-2xl cursor-pointer transition-all">
+                            <input type="radio" id="radio-padrao" name="special-type" value="PADRAO" checked class="hidden" onchange="toggleRadioStyle()">
+                            <i class="fa-solid fa-circle-check mr-2"></i>
+                            <span class="text-[10px] font-black uppercase tracking-tighter">Peça Padrão</span>
                         </label>
-                        <label class="flex items-center p-4 border-2 border-slate-100 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all" id="label-retrabalho">
-                            <input type="radio" name="special-type" value="RETRABALHO" class="hidden" onchange="toggleRadioStyle()">
-                            <div class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center mr-3"></div>
-                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Retrabalho</span>
+                        <!-- RETRABALHO -->
+                        <label for="radio-retrabalho" id="label-retrabalho" class="flex items-center p-4 border-2 border-slate-100 rounded-2xl cursor-pointer transition-all text-slate-400">
+                            <input type="radio" id="radio-retrabalho" name="special-type" value="RETRABALHO" class="hidden" onchange="toggleRadioStyle()">
+                            <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+                            <span class="text-[10px] font-black uppercase tracking-tighter">Retrabalho</span>
                         </label>
                     </div>
                 </div>
@@ -334,16 +336,27 @@
                 
                 const cardStyle = isSent ? 'opacity-40 grayscale pointer-events-none' : '';
                 
-                // Badge Dinâmico: Mostra o destino real da peça (Ex: EM RETÍFICA)
-                let badgeText = comp.isSpecial ? (comp.type === 'RETRABALHO' ? 'RETRABALHO' : 'ESPECIAL') : 'Desmontagem';
+                // Badge Dinâmico
+                let badgeText = 'Desmontagem';
+                let badgeColor = 'bg-turbo-teal';
+
+                if (comp.isSpecial) {
+                    if (comp.type === 'RETRABALHO') {
+                        badgeText = 'RETRABALHO';
+                        badgeColor = 'bg-red-600';
+                    } else {
+                        badgeText = 'ESPECIAL';
+                        badgeColor = 'bg-turbo-teal';
+                    }
+                }
+
                 if (isSent) {
-                    // Limpa nomes longos vindos do banco para caber no badge
                     const destino = trk.stage.toUpperCase()
                                      .replace('BANCADA DE USINAGEM', 'BANCADA')
                                      .replace('TRIAGEM DE PRODUÇÃO', 'TRIAGEM');
                     badgeText = `EM ${destino}`;
+                    badgeColor = 'bg-slate-500';
                 }
-                const badgeColor = isSent ? 'bg-slate-500' : (comp.type === 'RETRABALHO' ? 'bg-red-600' : 'bg-turbo-teal');
                 const itemHtml = comp.items.map(item => `<label class="flex items-center space-x-3 cursor-pointer group py-1.5"><input type="checkbox" ${isSent ? 'disabled' : ''} class="w-5 h-5 rounded border-slate-300 text-turbo-teal focus:ring-turbo-teal transition-all" data-service="${item}"><span class="text-xs font-bold text-slate-500 group-hover:text-slate-800 transition">${item}</span></label>`).join('');
                 return `<div class="bg-white rounded-3xl shadow-sm border-2 border-slate-100 flex flex-col p-6 ${cardStyle}" id="card-comp-${comp.title.replace(/\s+/g, '-')}"><div class="flex justify-between items-center mb-6"><h4 class="text-2xl font-black text-slate-800 tracking-tighter uppercase">${comp.title}</h4><span class="text-[10px] font-black uppercase px-4 py-1.5 ${badgeColor} text-white rounded-full tracking-widest">${badgeText}</span></div><div class="flex-1 flex flex-col"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 italic">CHECKLIST DE LIMPEZA/TRATAMENTO:</p><div class="space-y-1 mb-8">${itemHtml}</div><hr class="border-slate-100 mb-6"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">ENCAMINHAR PARA:</p><div class="grid grid-cols-2 gap-2"><button onclick="sendPieceToSector('${comp.title}', 'RETIFICA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Retífica</button><button onclick="sendPieceToSector('${comp.title}', 'SOLDA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Solda</button><button onclick="sendPieceToSector('${comp.title}', 'METROLOGIA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Metrologia</button><button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Bancada</button><button onclick="sendPieceToSector('${comp.title}', 'MONTAGEM', this)" class="col-span-2 py-4 bg-emerald-600 text-white text-[11px] font-black uppercase rounded-xl transition hover:bg-emerald-700 shadow-lg shadow-emerald-100 mt-2">Pronto p/ Montagem</button></div></div></div>`;
             }).join('');
@@ -382,6 +395,24 @@ function openSpecialModal() {
             } else { 
                 btn.disabled = true; 
                 btn.className = 'flex-[2] bg-turbo-teal/40 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest cursor-not-allowed'; 
+            }
+        }
+		
+		function toggleRadioStyle() {
+            const selectedType = document.querySelector('input[name="special-type"]:checked').value;
+            const isRework = selectedType === 'RETRABALHO';
+            
+            const lblPadrao = document.getElementById('label-padrao');
+            const lblRetrabalho = document.getElementById('label-retrabalho');
+
+            if (isRework) {
+                // Estilo Retrabalho (Vermelho)
+                lblRetrabalho.className = 'flex items-center p-4 border-2 rounded-2xl cursor-pointer bg-red-50 border-red-500 text-red-600 transition-all';
+                lblPadrao.className = 'flex items-center p-4 border-2 border-slate-100 rounded-2xl cursor-pointer text-slate-400 transition-all';
+            } else {
+                // Estilo Padrão (Teal)
+                lblPadrao.className = 'flex items-center p-4 border-2 rounded-2xl cursor-pointer bg-teal-50 border-turbo-teal text-turbo-teal transition-all';
+                lblRetrabalho.className = 'flex items-center p-4 border-2 border-slate-100 rounded-2xl cursor-pointer text-slate-400 transition-all';
             }
         }
 
