@@ -275,9 +275,9 @@
             } catch (e) { console.error("Erro Fila:", e); }
         }
 
-        function selectOS(os) {
+        async function selectOS(os) {
             currentSelection = os;
-            specialItemsList = []; // Reseta itens especiais ao trocar de OS
+            specialItemsList = []; 
             document.querySelectorAll('#os-list > div').forEach(c => c.classList.remove('os-selected'));
             document.getElementById(`card-${os.id}`)?.classList.add('os-selected');
             document.getElementById('welcome-screen').classList.add('hidden');
@@ -285,6 +285,21 @@
             document.getElementById('footer-actions').classList.remove('hidden');
             document.getElementById('display-os').innerText = os.business_id;
             document.getElementById('display-desc').innerText = `${os.client} | ${os.model}`;
+            
+            // Busca direta das peças ativas no Supabase para sincronizar em tempo real
+            try {
+                const { data: trackingData, error } = await supabaseClient
+                    .from('component_tracking')
+                    .select('*')
+                    .eq('service_order_id', os.id);
+                
+                if (!error && trackingData) {
+                    currentSelection.tracking = trackingData;
+                }
+            } catch (e) {
+                console.error("Erro ao carregar rastreio na Desmontagem:", e);
+            }
+
             renderChecklists(); 
             renderComponentGrid(); 
         }
