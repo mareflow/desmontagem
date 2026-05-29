@@ -339,12 +339,17 @@
             if (!grid || !currentSelection) return;
             const allToRender = [...MASTER_COMPONENTS, ...specialItemsList];
             grid.innerHTML = allToRender.map(comp => {
-                const trk = (currentSelection.tracking || []).find(t => t.component === comp.title);
+                // Busca defensiva que aceita tanto component_name quanto component
+                const trk = (currentSelection.tracking || []).find(t => 
+                    (t.component_name || t.component || '').toUpperCase() === comp.title.toUpperCase()
+                );
                 
-                // NOVA REGRA: Só bloqueia (isSent) se a peça já estiver em um setor produtivo posterior.
-                // Se o estágio for 'Triagem de Produção' ou 'Desmontagem', ela ainda está disponível aqui.
-                const setoresPosteriores = ['RETIFICA', 'SOLDA', 'METROLOGIA', 'BANCADA', 'MONTAGEM', 'Bancada de Usinagem'];
-                const isSent = !!trk && setoresPosteriores.includes(trk.stage);
+                // Mapeia o estágio atual (current_stage ou stage) de forma segura
+                const stageAtual = trk ? (trk.current_stage || trk.stage || '').toUpperCase() : '';
+                
+                // Inclui todos os setores posteriores (incluindo o BALANCEAMENTO)
+                const setoresPosteriores = ['RETIFICA', 'SOLDA', 'METROLOGIA', 'BANCADA', 'MONTAGEM', 'BALANCEAMENTO', 'BANCADA DE USINAGEM'];
+                const isSent = !!trk && setoresPosteriores.includes(stageAtual);
                 
                 const cardStyle = isSent ? 'opacity-40 grayscale pointer-events-none' : '';
                 
@@ -485,11 +490,19 @@ function openSpecialModal() {
                     // Adiciona ou atualiza a peça no rastreio da OS na memória do navegador
                     if (!currentSelection.tracking) currentSelection.tracking = [];
                     
-                    let trk = currentSelection.tracking.find(t => t.component === pieceName);
+                    let trk = currentSelection.tracking.find(t => 
+                        (t.component_name || t.component || '').toUpperCase() === pieceName.toUpperCase()
+                    );
                     if (trk) {
+                        trk.current_stage = sector;
                         trk.stage = sector;
                     } else {
-                        currentSelection.tracking.push({ component: pieceName, stage: sector });
+                        currentSelection.tracking.push({ 
+                            component_name: pieceName, 
+                            component: pieceName, 
+                            current_stage: sector, 
+                            stage: sector 
+                        });
                     }
 
                     // Redesenha o grid de componentes para aplicar o novo badge e as cores
