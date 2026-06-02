@@ -295,11 +295,11 @@
             document.getElementById('main-workspace').classList.remove('hidden');
             document.getElementById('display-os').innerText = os.business_id;
             
-            // Exibe a identificação salva no banner do topo se já existir
+            // 🌟 CORREÇÃO: Renderiza as informações de marcação se já existirem no banco de dados
             const displayDesc = `${os.client} | ${os.model}` + (os.part_number ? ` | ${os.trade_in_option || ''} [ ${os.part_number} ]` : '');
             document.getElementById('display-desc').innerText = displayDesc;
             
-            // Controle de visibilidade do Painel de Identificação
+            // 🌟 CORREÇÃO: Oculta o painel de Identificação se o código já estiver gravado
             const panelIdentificacao = document.getElementById('panel-identificacao');
             if (os.part_number) {
                 if (panelIdentificacao) panelIdentificacao.classList.add('hidden');
