@@ -413,6 +413,9 @@
                     todasPecasEnviadas = false; // Bloqueia liberação se houver peça pendente em Desmontagem
                 }
 
+                // Resgata o histórico de cronometragem da coluna JSONB tracking_data
+                const trackingData = trk && trk.tracking_data ? (typeof trk.tracking_data === 'string' ? JSON.parse(trk.tracking_data) : trk.tracking_data) : [];
+
                 const cardStyle = isSent ? 'opacity-40 grayscale pointer-events-none' : '';
                 
                 // Badge Dinâmico
@@ -436,7 +439,44 @@
                     badgeText = `EM ${destino}`;
                     badgeColor = 'bg-slate-500';
                 }
-                const itemHtml = comp.items.map(item => `<label class="flex items-center space-x-3 cursor-pointer group py-1.5"><input type="checkbox" ${isSent ? 'disabled' : ''} class="w-5 h-5 rounded border-slate-300 text-turbo-teal focus:ring-turbo-teal transition-all" data-service="${item}"><span class="text-xs font-bold text-slate-500 group-hover:text-slate-800 transition">${item}</span></label>`).join('');
+
+                // Renderiza cada serviço de limpeza com controle de cronômetro
+                const itemHtml = comp.items.map(item => {
+                    const cleanItemName = item.replace(/\s+/g, '_').toLowerCase();
+                    const savedLog = Array.isArray(trackingData) ? trackingData.find(log => log.service === item) : null;
+                    
+                    const timerKey = `timer_${currentSelection.id}_${comp.title}_${item}`;
+                    const isActive = localStorage.getItem(timerKey) !== null;
+
+                    let timeBadgeHtml = "";
+                    let actionBtnHtml = "";
+
+                    if (savedLog) {
+                        const min = Math.floor(savedLog.duration_seconds / 60);
+                        const sec = savedLog.duration_seconds % 60;
+                        timeBadgeHtml = `<span class="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-black uppercase border border-emerald-100"><i class="fa-solid fa-clock mr-1"></i> ${min}:${sec.toString().padStart(2, '0')} min</span>`;
+                    } else if (isActive) {
+                        timeBadgeHtml = `<span id="badge-${comp.title}-${cleanItemName}" class="text-[10px] text-orange-600 bg-orange-50 px-2 py-0.5 rounded font-black animate-pulse border border-orange-100">00:00</span>`;
+                        actionBtnHtml = `<button type="button" onclick="stopServiceTimer('${comp.title}', '${item}')" class="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-lg transition-all uppercase text-[9px] tracking-wider">Parar</button>`;
+                    } else {
+                        actionBtnHtml = `<button type="button" onclick="startServiceTimer('${comp.title}', '${item}')" class="text-xs bg-turbo-teal hover:bg-teal-700 text-white font-bold py-1 px-3 rounded-lg transition-all uppercase text-[9px] tracking-wider"><i class="fa-solid fa-play mr-1"></i> Iniciar</button>`;
+                    }
+
+                    return `
+                        <div class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 px-2 rounded-lg transition">
+                            <div class="flex items-center space-x-3">
+                                <label class="flex items-center space-x-3 cursor-pointer group">
+                                    <input type="checkbox" ${isSent ? 'disabled' : ''} ${savedLog ? 'checked' : ''} class="w-5 h-5 rounded border-slate-300 text-turbo-teal focus:ring-turbo-teal transition-all" data-service="${item}">
+                                    <span class="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition">${item}</span>
+                                </label>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                ${timeBadgeHtml}
+                                ${!isSent ? actionBtnHtml : ''}
+                            </div>
+                        </div>`;
+                }).join('');
+
                 return `<div class="bg-white rounded-3xl shadow-sm border-2 border-slate-100 flex flex-col p-6 ${cardStyle}" id="card-comp-${comp.title.replace(/\s+/g, '-')}"><div class="flex justify-between items-center mb-6"><h4 class="text-2xl font-black text-slate-800 tracking-tighter uppercase">${comp.title}</h4><span class="text-[10px] font-black uppercase px-4 py-1.5 ${badgeColor} text-white rounded-full tracking-widest">${badgeText}</span></div><div class="flex-1 flex flex-col"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 italic">CHECKLIST DE LIMPEZA/TRATAMENTO:</p><div class="space-y-1 mb-8">${itemHtml}</div><hr class="border-slate-100 mb-6"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">ENCAMINHAR PARA:</p><div class="grid grid-cols-2 gap-2"><button onclick="sendPieceToSector('${comp.title}', 'RETIFICA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Retífica</button><button onclick="sendPieceToSector('${comp.title}', 'SOLDA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Solda</button><button onclick="sendPieceToSector('${comp.title}', 'METROLOGIA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Metrologia</button><button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Bancada</button>${comp.title.toUpperCase() === 'EIXO' ? `
                                 <button onclick="sendPieceToSector('${comp.title}', 'BALANCEAMENTO', this)" class="col-span-2 py-3 bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-black uppercase rounded-lg transition shadow-md">Enviar p/ Balanceamento Solo</button>
                             ` : ''}
@@ -815,6 +855,103 @@ function openSpecialModal() {
                 .map(([key, _]) => `<li class="font-bold text-slate-700">${mapping[key] || key}</li>`);
             return items.length > 0 ? items.join('') : '<li class="text-slate-400">Nenhum item adicional.</li>';
         }
+		
+		// INICIA O CRONÔMETRO DE UM SERVIÇO ESPECÍFICO (SALVA INÍCIO NO LOCALSTORAGE)
+        function startServiceTimer(componentName, serviceName) {
+            if (!currentSelection) return;
+            const timerKey = `timer_${currentSelection.id}_${componentName}_${serviceName}`;
+            localStorage.setItem(timerKey, new Date().toISOString());
+            renderComponentGrid();
+        }
+
+        // PARA O CRONÔMETRO E PERSISTE O TEMPO DECORRIDO NO SUPABASE (COLUNA JSONB tracking_data)
+        async function stopServiceTimer(componentName, serviceName) {
+            if (!currentSelection) return;
+            const timerKey = `timer_${currentSelection.id}_${componentName}_${serviceName}`;
+            const startTimeStr = localStorage.getItem(timerKey);
+            
+            if (!startTimeStr) return;
+            localStorage.removeItem(timerKey);
+
+            const startTime = new Date(startTimeStr);
+            const endTime = new Date();
+            const durationSeconds = Math.max(1, Math.floor((endTime - startTime) / 1000));
+
+            // Busca o registro de rastreio atual para atualizar o JSONB tracking_data
+            let trackingData = [];
+            const trk = (currentSelection.tracking || []).find(t => 
+                (t.component_name || t.component || '').toUpperCase() === componentName.toUpperCase()
+            );
+
+            if (trk && trk.tracking_data) {
+                trackingData = typeof trk.tracking_data === 'string' ? JSON.parse(trk.tracking_data) : trk.tracking_data;
+            }
+
+            // Remove o log antigo desse serviço se houver
+            trackingData = trackingData.filter(log => log.service !== serviceName);
+
+            // Adiciona o novo log de cronometragem
+            trackingData.push({
+                service: serviceName,
+                start_time: startTime.toISOString(),
+                end_time: endTime.toISOString(),
+                duration_seconds: durationSeconds
+            });
+
+            // Atualiza em tempo real no Supabase
+            try {
+                const { error } = await supabaseClient
+                    .from('component_tracking')
+                    .update({ tracking_data: trackingData })
+                    .eq('service_order_id', currentSelection.id)
+                    .ilike('component_name', componentName); // Case-insensitive
+
+                if (!error) {
+                    if (trk) {
+                        trk.tracking_data = trackingData;
+                    } else {
+                        if (!currentSelection.tracking) currentSelection.tracking = [];
+                        currentSelection.tracking.push({
+                            component_name: componentName,
+                            component: componentName,
+                            tracking_data: trackingData
+                        });
+                    }
+                    renderComponentGrid();
+                } else {
+                    alert("Erro ao salvar tempo de serviço no Supabase: " + error.message);
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Erro de conexão ao salvar tempo.");
+            }
+        }
+
+        // Intervalo de Atualização dos Cronômetros Pulsando na Tela (A cada 1 segundo)
+        setInterval(() => {
+            if (!currentSelection) return;
+            document.querySelectorAll('[id^="badge-"]').forEach(badge => {
+                const idParts = badge.id.split('-');
+                const compTitle = idParts[1];
+                const cleanItemName = idParts[2];
+                
+                // Encontra a chave de timer local associada
+                const prefix = `timer_${currentSelection.id}_${compTitle}_`;
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith(prefix)) {
+                        const startTimeStr = localStorage.getItem(key);
+                        if (startTimeStr) {
+                            const elapsed = Math.floor((new Date() - new Date(startTimeStr)) / 1000);
+                            const min = Math.floor(elapsed / 60);
+                            const sec = elapsed % 60;
+                            badge.innerText = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+                        }
+                    }
+                }
+            });
+        }, 1000);
+		
     </script>
 </body>
 </html>
