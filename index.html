@@ -98,7 +98,7 @@
                 </div>
 
                 <!-- IDENTIFICAÇÃO (Movido para baixo do Veredito) -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div id="panel-identificacao" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                     <h3 class="text-[10px] font-black uppercase text-turbo-teal mb-4 tracking-widest">Identificação e Marcação</h3>
                     <div class="space-y-4">
                             <select id="select-marking-type" class="w-full input-clean text-sm rounded-xl px-4 py-3 font-bold">
@@ -294,11 +294,20 @@
             document.getElementById('welcome-screen').classList.add('hidden');
             document.getElementById('main-workspace').classList.remove('hidden');
             document.getElementById('display-os').innerText = os.business_id;
-            document.getElementById('display-desc').innerText = `${os.client} | ${os.model}`;
             
-            // Preenche as marcações de identificação se já existirem no banco
-            document.getElementById('input-marking-code').value = os.part_number || '';
-            document.getElementById('select-marking-type').value = os.trade_in_option || 'Consumidor Final';
+            // Exibe a identificação salva no banner do topo se já existir
+            const displayDesc = `${os.client} | ${os.model}` + (os.part_number ? ` | ${os.trade_in_option || ''} [ ${os.part_number} ]` : '');
+            document.getElementById('display-desc').innerText = displayDesc;
+            
+            // Controle de visibilidade do Painel de Identificação
+            const panelIdentificacao = document.getElementById('panel-identificacao');
+            if (os.part_number) {
+                if (panelIdentificacao) panelIdentificacao.classList.add('hidden');
+            } else {
+                if (panelIdentificacao) panelIdentificacao.classList.remove('hidden');
+                document.getElementById('input-marking-code').value = '';
+                document.getElementById('select-marking-type').value = 'Consumidor Final';
+            }
 
             // Busca direta das peças ativas no Supabase para sincronizar em tempo real
             try {
@@ -569,6 +578,11 @@ function openSpecialModal() {
             const code = codeInput.value.trim().toUpperCase();
             const type = typeSelect.value;
             
+            if (!code) {
+                alert("Por favor, digite o código de marcação antes de gravar.");
+                return;
+            }
+            
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Gravando...`;
             
@@ -584,6 +598,14 @@ function openSpecialModal() {
                 if (!error) {
                     currentSelection.part_number = code;
                     currentSelection.trade_in_option = type;
+                    
+                    // Atualiza em tempo real o sub-texto do topo
+                    document.getElementById('display-desc').innerText = `${currentSelection.client} | ${currentSelection.model} | ${type} [ ${code} ]`;
+                    
+                    // Oculta imediatamente o painel de identificação, pois a gravação foi realizada
+                    const panelIdentificacao = document.getElementById('panel-identificacao');
+                    if (panelIdentificacao) panelIdentificacao.classList.add('hidden');
+                    
                     alert('Identificação gravada com sucesso!');
                 } else {
                     alert('Erro ao gravar no Supabase: ' + error.message);
