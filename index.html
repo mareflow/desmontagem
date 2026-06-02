@@ -386,10 +386,10 @@
                 btnSalvar.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist';
             }
 
-            // Busca do checklist salvo especificamente por esta OS para checar se já foi preenchido
+            // Busca do checklist salvo especificamente por esta OS na tabela isolada de Desmontagem
             try {
                 const { data: checklistData, error } = await supabaseClient
-                    .from('checklist_analysis_general')
+                    .from('checklist_desmontagem')
                     .select('*')
                     .eq('service_order_id', os.id);
                 
@@ -806,7 +806,7 @@ function openSpecialModal() {
 
             try {
                 const { error } = await supabaseClient
-                    .from('checklist_analysis_general')
+                    .from('checklist_desmontagem')
                     .upsert(rows, { onConflict: 'service_order_id,item_name' });
                 
                 if (error) {
