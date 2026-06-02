@@ -596,22 +596,31 @@ function openSpecialModal() {
                     .eq('id', currentSelection.id);
                     
                 if (!error) {
+                    // 1. Atualiza o objeto na memória do Front-end
                     currentSelection.part_number = code;
                     currentSelection.trade_in_option = type;
-                    
-                    // Atualiza em tempo real o sub-texto do topo
-                    document.getElementById('display-desc').innerText = `${currentSelection.client} | ${currentSelection.model} | ${type} [ ${code} ]`;
-                    
-                    // Oculta imediatamente o painel de identificação, pois a gravação foi realizada
+
+                    // 2. Atualiza o texto descritivo do topo
+                    const displayDesc = `${currentSelection.client} | ${currentSelection.model} | ${type} [ ${code} ]`;
+                    document.getElementById('display-desc').innerText = displayDesc;
+
+                    // 3. Esconde o painel imediatamente sem precisar recarregar a página
                     const panelIdentificacao = document.getElementById('panel-identificacao');
-                    if (panelIdentificacao) panelIdentificacao.classList.add('hidden');
-                    
-                    alert('Identificação gravada com sucesso!');
+                    if (panelIdentificacao) {
+                        panelIdentificacao.classList.add('hidden');
+                    }
+
+                    // 4. Dispara o modal de sucesso visual que você já tem criado
+                    document.getElementById('successMsg').innerText = "Código de identificação gravado com sucesso!";
+                    document.getElementById('modalSuccess').classList.remove('hidden');
+
+                    // 5. Atualiza a lista da esquerda para persistir o estado visual
+                    loadDisassemblyQueue();
                 } else {
                     alert('Erro ao gravar no Supabase: ' + error.message);
                 }
             } catch (e) {
-                console.error(e);
+                console.error("Erro ao gravar identificação:", e);
             } finally {
                 btn.disabled = false;
                 btn.innerText = 'Gravar';
