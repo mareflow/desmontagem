@@ -649,6 +649,11 @@ function openSpecialModal() {
         async function saveChecklistDisassembly() {
             if (!currentSelection) return false;
             
+            const btn = document.getElementById('btn-salvar-checklist');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-2"></i> Gravando...`;
+
             const rows = [];
             document.querySelectorAll('.status-select-disassembly').forEach(select => {
                 const itemName = select.dataset.itemName;
@@ -666,7 +671,12 @@ function openSpecialModal() {
                 }
             });
 
-            if (rows.length === 0) return true;
+            if (rows.length === 0) {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                alert('Preencha ao menos um item do checklist antes de salvar.');
+                return false;
+            }
 
             try {
                 const { error } = await supabaseClient
@@ -675,12 +685,21 @@ function openSpecialModal() {
                 
                 if (error) {
                     console.error("Erro ao salvar checklist na Desmontagem:", error);
+                    alert("Erro ao salvar checklist: " + error.message);
                     return false;
                 }
+                
+                // Exibe o modal de sucesso do próprio sistema
+                document.getElementById('successMsg').innerText = "Checklist da Desmontagem salvo com sucesso!";
+                document.getElementById('modalSuccess').classList.remove('hidden');
                 return true;
             } catch (e) {
                 console.error(e);
+                alert("Falha de conexão ao salvar o checklist.");
                 return false;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         }
 
