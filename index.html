@@ -115,31 +115,48 @@
                 </div>
 
 <!-- CONFERÊNCIA TÉCNICA (VISTORIAR AVARIAS) -->
-<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-    <!-- Abas de Navegação -->
-    <div class="p-4 border-b flex space-x-8 bg-slate-50 overflow-x-auto">
-        <button type="button" class="tab-button-disassembly text-turbo-teal border-b-2 border-turbo-teal font-bold text-[11px] uppercase tracking-tight whitespace-nowrap" data-tab="tab1">1. Anexos (Itens Externos do Cliente)</button>
-        <button type="button" class="tab-button-disassembly text-gray-500 hover:text-gray-700 font-medium text-[11px] uppercase tracking-tight whitespace-nowrap" data-tab="tab2">2. Reparos Gerais (Interno)</button>
-        <button type="button" class="tab-button-disassembly text-gray-500 hover:text-gray-700 font-medium text-[11px] uppercase tracking-tight whitespace-nowrap" data-tab="tab3">3. Checklist do Caracol (Caixa Quente)</button>
+<div id="panel-conferencia-tecnica" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    
+    <!-- Painel de Inputs (Abas de Preenchimento) -->
+    <div id="checklist-inputs-container">
+        <!-- Abas de Navegação -->
+        <div class="p-4 border-b flex space-x-8 bg-slate-50 overflow-x-auto">
+            <button type="button" class="tab-button-disassembly text-turbo-teal border-b-2 border-turbo-teal font-bold text-[11px] uppercase tracking-tight whitespace-nowrap" data-tab="tab1">1. Anexos (Itens Externos do Cliente)</button>
+            <button type="button" class="tab-button-disassembly text-gray-500 hover:text-gray-700 font-medium text-[11px] uppercase tracking-tight whitespace-nowrap" data-tab="tab2">2. Reparos Gerais (Interno)</button>
+            <button type="button" class="tab-button-disassembly text-gray-500 hover:text-gray-700 font-medium text-[11px] uppercase tracking-tight whitespace-nowrap" data-tab="tab3">3. Checklist do Caracol (Caixa Quente)</button>
+        </div>
+
+        <!-- Conteúdo das Abas -->
+        <div class="p-6">
+            <div id="tab1" class="tab-content-disassembly space-y-1"></div>
+            <div id="tab2" class="tab-content-disassembly hidden space-y-1"></div>
+            <div id="tab3" class="tab-content-disassembly hidden space-y-1"></div>
+
+            <!-- Área de Ações Unificadas do Checklist (Desmontagem) -->
+            <div class="flex justify-between items-center pt-6 border-t border-slate-100 mt-4">
+                <!-- Botão 1: Salvar Checklist (Amber) -->
+                <button type="button" id="btn-salvar-checklist" onclick="saveChecklistDisassembly()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-xl transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center">
+                    <i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist
+                </button>
+
+                <!-- Botão 2: Concluir Limpeza e Liberar OS (Orange, habilitado apenas quando todas as peças forem enviadas) -->
+                <button type="button" id="btn-concluir-desmontagem" disabled onclick="handleAction('FINISH')" class="bg-gray-300 text-slate-400 cursor-not-allowed font-bold py-3 px-6 rounded-xl transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center">
+                    2. Concluir Limpeza e Liberar OS
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- Conteúdo das Abas -->
-    <div class="p-6">
-        <div id="tab1" class="tab-content-disassembly space-y-1"></div>
-        <div id="tab2" class="tab-content-disassembly hidden space-y-1"></div>
-        <div id="tab3" class="tab-content-disassembly hidden space-y-1"></div>
-
-        <!-- Área de Ações Unificadas do Checklist (Desmontagem) -->
-        <div class="flex justify-between items-center pt-6 border-t border-slate-100 mt-4">
-            <!-- Botão 1: Salvar Checklist (Amber) -->
-            <button type="button" id="btn-salvar-checklist" onclick="saveChecklistDisassembly()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-xl transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center">
-                <i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist
-            </button>
-
-            <!-- Botão 2: Concluir Limpeza e Liberar OS (Orange, habilitado apenas quando todas as peças forem enviadas) -->
-            <button type="button" id="btn-concluir-desmontagem" disabled onclick="handleAction('FINISH')" class="bg-gray-300 text-slate-400 cursor-not-allowed font-bold py-3 px-6 rounded-xl transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center">
-                2. Concluir Limpeza e Liberar OS
-            </button>
+    <!-- Painel de Resumo Estático (Oculto por padrão, visível após salvar) -->
+    <div id="checklist-summary-container" class="hidden p-6 bg-slate-50/50">
+        <div class="flex justify-between items-center mb-4">
+            <h4 class="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center">
+                <i class="fa-solid fa-circle-check text-emerald-600 mr-2 text-sm"></i> Resumo do Checklist Gravado (Leitura)
+            </h4>
+            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Laudo Salvo</span>
+        </div>
+        <div id="checklist-summary-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <!-- Injetado via JS -->
         </div>
     </div>
 </div>
@@ -307,7 +324,7 @@
             document.getElementById('main-workspace').classList.remove('hidden');
             document.getElementById('display-os').innerText = os.business_id;
 
-            // 🌟 CONSULTA DIRETA DA OS MESTRE: Contorna a ausência de colunas na View do n8n de fila
+            // Busca direta dos dados completos e atualizados da OS no Supabase (bypass da View)
             try {
                 const { data: osFresh, error: osError } = await supabaseClient
                     .from('service_orders')
@@ -316,7 +333,6 @@
                     .single();
                 
                 if (!osError && osFresh) {
-                    // Atualiza o objeto local com as marcações reais gravadas no banco
                     os.part_number = osFresh.part_number;
                     os.trade_in_option = osFresh.trade_in_option;
                     os.status = osFresh.status;
@@ -353,16 +369,39 @@
                 console.error("Erro ao carregar rastreio na Desmontagem:", e);
             }
 
+            // Resetador do contêiner de inputs e resumo do checklist
+            const inputContainer = document.getElementById('checklist-inputs-container');
+            const summaryContainer = document.getElementById('checklist-summary-container');
+            if (inputContainer) inputContainer.classList.remove('hidden');
+            if (summaryContainer) summaryContainer.classList.add('hidden');
+
             // Inicializa as abas de checklist limpas para que o desmontador realize uma vistoria independente
             renderChecklists(); 
 
-            // 🌟 RESET: Retorna o botão de salvar para o estado inicial laranja e clicável
+            // Reseta o estado visual do Botão de Salvar Checklist
             const btnSalvar = document.getElementById('btn-salvar-checklist');
             if (btnSalvar) {
                 btnSalvar.disabled = false;
                 btnSalvar.className = "bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-xl transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center";
                 btnSalvar.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist';
             }
+
+            // Busca do checklist salvo especificamente por esta OS para checar se já foi preenchido
+            try {
+                const { data: checklistData, error } = await supabaseClient
+                    .from('checklist_analysis_general')
+                    .select('*')
+                    .eq('service_order_id', os.id);
+                
+                // Se o desmontador já preencheu e salvou anteriormente, exibe apenas a visualização de leitura estática
+                if (!error && checklistData && checklistData.length > 0) {
+                    if (inputContainer) inputContainer.classList.add('hidden');
+                    if (summaryContainer) {
+                        summaryContainer.classList.remove('hidden');
+                        renderChecklistSummary(checklistData);
+                    }
+                }
+            } catch (e) { console.error("Erro ao conferir checklist na seleção:", e); }
 
             renderComponentGrid(); 
         }
@@ -706,6 +745,33 @@ function openSpecialModal() {
         }
 
         // FUNÇÃO PARA PERSISTIR TODAS AS ABAS DO CHECKLIST EXCLUSIVO DA DESMONTAGEM (UPSERT)
+        // FUNÇÃO PARA RENDERIZAR O RESUMO DO LAUDO DE FORMA ESTÁTICA (LEITURA)
+        function renderChecklistSummary(checklistData) {
+            const list = document.getElementById('checklist-summary-list');
+            if (!list) return;
+            
+            if (!checklistData || checklistData.length === 0) {
+                list.innerHTML = `<p class="text-slate-400 italic font-medium">Nenhum detalhe técnico foi respondido no checklist.</p>`;
+                return;
+            }
+
+            list.innerHTML = checklistData.map(item => {
+                let badgeColor = "bg-slate-100 text-slate-700";
+                if (item.status === 'PEÇA OK') badgeColor = "bg-emerald-500 text-white";
+                if (item.status === 'RECONDICIONAR') badgeColor = "bg-yellow-500 text-white";
+                if (item.status === 'TROCAR') badgeColor = "bg-red-600 text-white";
+
+                return `
+                    <div class="flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                        <span class="font-extrabold text-slate-700 uppercase text-[11px] tracking-tight">${item.item_name}</span>
+                        <div class="flex items-center space-x-3">
+                            <span class="px-3 py-1 rounded-lg text-[9px] font-black uppercase ${badgeColor} tracking-wider">${item.status}</span>
+                            ${item.observation ? `<span class="text-[10px] text-slate-400 italic max-w-[150px] truncate font-medium">Obs: "${item.observation}"</span>` : ''}
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
         // FUNÇÃO PARA PERSISTIR TODAS AS ABAS DO CHECKLIST EXCLUSIVO DA DESMONTAGEM (UPSERT)
         async function saveChecklistDisassembly() {
             if (!currentSelection) return false;
@@ -751,10 +817,14 @@ function openSpecialModal() {
                     return false;
                 }
                 
-                // 🌟 SUCESSO: Desabilita o botão, muda para verde e exibe "Checklist Salvo"
-                btn.disabled = true;
-                btn.className = "bg-green-600 text-white font-bold py-3 px-6 rounded-xl cursor-not-allowed shadow-md flex items-center justify-center opacity-90";
-                btn.innerHTML = '<i class="fa-solid fa-circle-check mr-2"></i> Checklist Salvo!';
+                // 🌟 SUCESSO: Oculta o formulário de preenchimento e exibe o resumo em tempo real
+                const inputContainer = document.getElementById('checklist-inputs-container');
+                const summaryContainer = document.getElementById('checklist-summary-container');
+                if (inputContainer) inputContainer.classList.add('hidden');
+                if (summaryContainer) {
+                    summaryContainer.classList.remove('hidden');
+                    renderChecklistSummary(rows);
+                }
 
                 // Exibe o modal de sucesso do próprio sistema
                 document.getElementById('successMsg').innerText = "Checklist da Desmontagem salvo com sucesso!";
