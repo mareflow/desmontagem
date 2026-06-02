@@ -101,12 +101,14 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                     <h3 class="text-[10px] font-black uppercase text-turbo-teal mb-4 tracking-widest">Identificação e Marcação</h3>
                     <div class="space-y-4">
-                            <select class="w-full input-clean text-sm rounded-xl px-4 py-3 font-bold">
-                                <option>Consumidor Final</option><option>Estoque DPS</option><option>Outros</option>
+                            <select id="select-marking-type" class="w-full input-clean text-sm rounded-xl px-4 py-3 font-bold">
+                                <option value="Consumidor Final">Consumidor Final</option>
+                                <option value="Estoque DPS">Estoque DPS</option>
+                                <option value="Outros">Outros</option>
                             </select>
                             <div class="flex space-x-2">
-                                <input type="text" placeholder="Ex: CF-617" class="flex-1 input-clean text-sm font-mono rounded-xl px-4 py-3">
-                                <button class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl text-xs font-bold uppercase transition shadow-lg shadow-blue-100">Gravar</button>
+                                <input type="text" id="input-marking-code" placeholder="Ex: CF-617" class="flex-1 input-clean text-sm font-mono rounded-xl px-4 py-3">
+                                <button type="button" id="btn-save-marking" onclick="saveIdentification()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl text-xs font-bold uppercase transition shadow-lg shadow-blue-100">Gravar</button>
                             </div>
                         </div>
                     </div>
@@ -286,6 +288,10 @@
             document.getElementById('display-os').innerText = os.business_id;
             document.getElementById('display-desc').innerText = `${os.client} | ${os.model}`;
             
+            // Preenche as marcações de identificação se já existirem no banco
+            document.getElementById('input-marking-code').value = os.part_number || '';
+            document.getElementById('select-marking-type').value = os.trade_in_option || 'Consumidor Final';
+
             // Busca direta das peças ativas no Supabase para sincronizar em tempo real
             try {
                 const { data: trackingData, error } = await supabaseClient
@@ -300,6 +306,7 @@
                 console.error("Erro ao carregar rastreio na Desmontagem:", e);
             }
 
+            // Inicializa as abas de checklist totalmente vazias (NÃO INFORMADO) para auditoria limpa do desmontador
             renderChecklists(); 
             renderComponentGrid(); 
         }
@@ -313,19 +320,22 @@
                 if (tabId === 'tab3') {
                     html += `<div class="p-3 mb-3 border border-red-200 rounded-xl bg-red-50/50 flex items-center space-x-3"><input type="checkbox" id="condenar-caracol-global" onchange="condenarTudoCaracol(this)" class="w-5 h-5 text-red-600 border-red-300 rounded focus:ring-red-500"><label for="condenar-caracol-global" class="text-[10px] font-black text-red-700 uppercase tracking-tighter">CONDENAR CARACOL COMPLETO (TROCAR)</label></div>`;
                 }
-                html += ANALYSIS_ITEMS[tabId].map(item => `
+                html += ANALYSIS_ITEMS[tabId].map(item => {
+                    const cleanName = item.replace(/\s+/g, '_').toLowerCase();
+                    return `
                     <div class="grid grid-cols-12 gap-3 items-center bg-white p-2 border-b border-slate-50 hover:bg-slate-50 transition">
                         <div class="col-span-5 text-[10px] font-bold text-slate-600 uppercase tracking-tighter ml-2">${item}</div>
                         <div class="col-span-3">
-                            <select onchange="updateSelectColor(this)" class="w-full bg-slate-400 text-white text-[9px] font-black py-2 rounded-lg uppercase text-center outline-none">
+                            <select id="status-${cleanName}" data-item-name="${item}" onchange="updateSelectColor(this)" class="status-select-disassembly w-full bg-slate-400 text-white text-[9px] font-black py-2 rounded-lg uppercase text-center outline-none">
                                 <option value="NÃO INFORMADO">NÃO INFORMADO</option>
                                 <option value="PEÇA OK">PEÇA OK</option>
                                 <option value="RECONDICIONAR">RECONDICIONAR</option>
                                 <option value="TROCAR">TROCAR</option>
                             </select>
                         </div>
-                        <div class="col-span-4"><input type="text" placeholder="Obs..." class="w-full bg-slate-100 text-slate-500 text-[10px] rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-turbo-teal border border-transparent"></div>
-                    </div>`).join('');
+                        <div class="col-span-4"><input type="text" id="obs-${cleanName}" placeholder="Obs..." class="w-full bg-slate-100 text-slate-500 text-[10px] rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-turbo-teal border border-transparent"></div>
+                    </div>`;
+                }).join('');
                 container.innerHTML = html;
             });
             // Re-bind do clique das abas
@@ -520,14 +530,104 @@ function openSpecialModal() {
             }
         }
 
+        // FUNÇÃO PARA SALVAR IDENTIFICAÇÃO E MARCAÇÃO DIRETO NO SUPABASE
+        async function saveIdentification() {
+            if (!currentSelection) return;
+            const codeInput = document.getElementById('input-marking-code');
+            const typeSelect = document.getElementById('select-marking-type');
+            const btn = document.getElementById('btn-save-marking');
+            
+            const code = codeInput.value.trim().toUpperCase();
+            const type = typeSelect.value;
+            
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Gravando...`;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('service_orders')
+                    .update({ 
+                        part_number: code,
+                        trade_in_option: type 
+                    })
+                    .eq('id', currentSelection.id);
+                    
+                if (!error) {
+                    currentSelection.part_number = code;
+                    currentSelection.trade_in_option = type;
+                    alert('Identificação gravada com sucesso!');
+                } else {
+                    alert('Erro ao gravar no Supabase: ' + error.message);
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Gravar';
+            }
+        }
+
+        // FUNÇÃO PARA PERSISTIR TODAS AS ABAS DO CHECKLIST EXCLUSIVO DA DESMONTAGEM (UPSERT)
+        async function saveChecklistDisassembly() {
+            if (!currentSelection) return false;
+            
+            const rows = [];
+            document.querySelectorAll('.status-select-disassembly').forEach(select => {
+                const itemName = select.dataset.itemName;
+                const cleanName = itemName.replace(/\s+/g, '_').toLowerCase();
+                const obsInput = document.getElementById(`obs-${cleanName}`);
+                const statusValue = select.value;
+                
+                if (statusValue !== 'NÃO INFORMADO') {
+                    rows.push({
+                        service_order_id: currentSelection.id,
+                        item_name: itemName.toUpperCase().trim(),
+                        status: statusValue,
+                        observation: obsInput ? obsInput.value.trim() : ''
+                    });
+                }
+            });
+
+            if (rows.length === 0) return true;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('checklist_analysis_general')
+                    .upsert(rows, { onConflict: 'service_order_id,item_name' });
+                
+                if (error) {
+                    console.error("Erro ao salvar checklist na Desmontagem:", error);
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                console.error(e);
+                return false;
+            }
+        }
+
         async function handleAction(type) {
             const btn = type === 'START' ? document.getElementById('btn-start') : document.querySelector('.bg-turbo-orange');
             btn.disabled = true;
+            
+            if (type === 'FINISH') {
+                btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Salvando Checklist...`;
+                const saved = await saveChecklistDisassembly();
+                if (!saved) {
+                    alert("Erro ao salvar checklist. A liberação foi cancelada.");
+                    btn.disabled = false;
+                    btn.innerText = "Concluir Limpeza e Liberar OS";
+                    return;
+                }
+            }
+
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Processando...`;
+
             try {
                 const res = await fetch(API_ACTION, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ os_id: currentSelection.id, action: type, user_id: USER_ID }) });
                 if (res.ok) { document.getElementById('modalSuccess').classList.remove('hidden'); if(type === 'FINISH') window.location.reload(); }
             } catch (e) { console.error(e); }
-            finally { btn.disabled = false; }
+            finally { btn.disabled = false; btn.innerText = type === 'START' ? "Iniciar Desmontagem" : "Concluir Limpeza e Liberar OS"; }
         }
 
         function updateSelectColor(el) {
