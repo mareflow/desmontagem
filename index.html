@@ -128,6 +128,19 @@
         <div id="tab1" class="tab-content-disassembly space-y-1"></div>
         <div id="tab2" class="tab-content-disassembly hidden space-y-1"></div>
         <div id="tab3" class="tab-content-disassembly hidden space-y-1"></div>
+
+        <!-- Área de Ações Unificadas do Checklist (Desmontagem) -->
+        <div class="flex justify-between items-center pt-6 border-t border-slate-100 mt-4">
+            <!-- Botão 1: Salvar Checklist (Amber) -->
+            <button type="button" id="btn-salvar-checklist" onclick="saveChecklistDisassembly()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-xl transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center">
+                <i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist
+            </button>
+
+            <!-- Botão 2: Concluir Limpeza e Liberar OS (Orange, habilitado apenas quando todas as peças forem enviadas) -->
+            <button type="button" id="btn-concluir-desmontagem" disabled onclick="handleAction('FINISH')" class="bg-gray-300 text-slate-400 cursor-not-allowed font-bold py-3 px-6 rounded-xl transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center">
+                2. Concluir Limpeza e Liberar OS
+            </button>
+        </div>
     </div>
 </div>
 
@@ -186,11 +199,7 @@
             </div>
         </div>
     </div>
-    <div id="footer-actions" class="fixed bottom-0 right-0 p-8 z-30 hidden">
-        <button onclick="handleAction('FINISH')" class="bg-turbo-orange hover:bg-orange-700 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-sm shadow-2xl transition-all transform hover:-translate-y-1">
-            Concluir Limpeza e Liberar OS
-        </button>
-    </div>
+    
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -284,7 +293,6 @@
             document.getElementById(`card-${os.id}`)?.classList.add('os-selected');
             document.getElementById('welcome-screen').classList.add('hidden');
             document.getElementById('main-workspace').classList.remove('hidden');
-            document.getElementById('footer-actions').classList.remove('hidden');
             document.getElementById('display-os').innerText = os.business_id;
             document.getElementById('display-desc').innerText = `${os.client} | ${os.model}`;
             
@@ -306,8 +314,9 @@
                 console.error("Erro ao carregar rastreio na Desmontagem:", e);
             }
 
-            // Inicializa as abas de checklist totalmente vazias (NÃO INFORMADO) para auditoria limpa do desmontador
+            // Inicializa as abas de checklist limpas para que o desmontador realize uma vistoria independente
             renderChecklists(); 
+
             renderComponentGrid(); 
         }
 
@@ -348,6 +357,10 @@
             const grid = document.getElementById('component-grid');
             if (!grid || !currentSelection) return;
             const allToRender = [...MASTER_COMPONENTS, ...specialItemsList];
+            
+            // Controle estrito de liberação física da OS
+            let todasPecasEnviadas = true;
+
             grid.innerHTML = allToRender.map(comp => {
                 // Busca defensiva que aceita tanto component_name quanto component
                 const trk = (currentSelection.tracking || []).find(t => 
@@ -361,6 +374,10 @@
                 const setoresPosteriores = ['RETIFICA', 'SOLDA', 'METROLOGIA', 'BANCADA', 'MONTAGEM', 'BALANCEAMENTO', 'BANCADA DE USINAGEM'];
                 const isSent = !!trk && setoresPosteriores.includes(stageAtual);
                 
+                if (!isSent) {
+                    todasPecasEnviadas = false; // Bloqueia liberação se houver peça pendente em Desmontagem
+                }
+
                 const cardStyle = isSent ? 'opacity-40 grayscale pointer-events-none' : '';
                 
                 // Badge Dinâmico
@@ -394,6 +411,18 @@
                     </div>
                 </div>`;
             }).join('');
+
+            // Controla a liberação do Botão 2 (Concluir Desmontagem) apenas quando 100% das peças forem enviadas
+            const btnConcluir = document.getElementById('btn-concluir-desmontagem');
+            if (btnConcluir) {
+                if (todasPecasEnviadas) {
+                    btnConcluir.disabled = false;
+                    btnConcluir.className = "bg-turbo-orange hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-xl transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center cursor-pointer";
+                } else {
+                    btnConcluir.disabled = true;
+                    btnConcluir.className = "bg-gray-300 text-slate-400 cursor-not-allowed font-bold py-3 px-6 rounded-xl transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center";
+                }
+            }
         }
 
         // 5. AÇÕES E MODAIS
