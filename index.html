@@ -864,7 +864,7 @@ function openSpecialModal() {
             renderComponentGrid();
         }
 
-        // PARA O CRONÔMETRO E PERSISTE O TEMPO DECORRIDO NO SUPABASE (COLUNA JSONB tracking_data)
+        // PARA O CRONÔMETRO E PERSISTE O TEMPO DECORRIDO NO SUPABASE (USANDO UPSERT PARA SEGURANÇA)
         async function stopServiceTimer(componentName, serviceName) {
             if (!currentSelection) return;
             const timerKey = `timer_${currentSelection.id}_${componentName}_${serviceName}`;
@@ -898,13 +898,17 @@ function openSpecialModal() {
                 duration_seconds: durationSeconds
             });
 
-            // Atualiza em tempo real no Supabase
+            // 🌟 CORREÇÃO: Usa UPSERT com chave de conflito para criar a linha caso ela ainda não exista no rastreador
             try {
                 const { error } = await supabaseClient
                     .from('component_tracking')
-                    .update({ tracking_data: trackingData })
-                    .eq('service_order_id', currentSelection.id)
-                    .ilike('component_name', componentName); // Case-insensitive
+                    .upsert({
+                        service_order_id: currentSelection.id,
+                        component_name: componentName.toUpperCase().trim(),
+                        tracking_data: trackingData,
+                        current_stage: 'DESMONTAGEM', // Estágio padrão inicial
+                        status: 'Pendente' // Status padrão inicial
+                    }, { onConflict: 'service_order_id,component_name' });
 
                 if (!error) {
                     if (trk) {
@@ -914,6 +918,8 @@ function openSpecialModal() {
                         currentSelection.tracking.push({
                             component_name: componentName,
                             component: componentName,
+                            current_stage: 'DESMONTAGEM',
+                            status: 'Pendente',
                             tracking_data: trackingData
                         });
                     }
