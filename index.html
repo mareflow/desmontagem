@@ -294,12 +294,30 @@
             document.getElementById('welcome-screen').classList.add('hidden');
             document.getElementById('main-workspace').classList.remove('hidden');
             document.getElementById('display-os').innerText = os.business_id;
+
+            // 🌟 CONSULTA DIRETA DA OS MESTRE: Contorna a ausência de colunas na View do n8n de fila
+            try {
+                const { data: osFresh, error: osError } = await supabaseClient
+                    .from('service_orders')
+                    .select('*')
+                    .eq('id', os.id)
+                    .single();
+                
+                if (!osError && osFresh) {
+                    // Atualiza o objeto local com as marcações reais gravadas no banco
+                    os.part_number = osFresh.part_number;
+                    os.trade_in_option = osFresh.trade_in_option;
+                    os.status = osFresh.status;
+                }
+            } catch (e) {
+                console.error("Erro ao carregar OS fresca do Supabase:", e);
+            }
             
-            // 🌟 CORREÇÃO: Renderiza as informações de marcação se já existirem no banco de dados
+            // Exibe a identificação salva no banner do topo se já existir
             const displayDesc = `${os.client} | ${os.model}` + (os.part_number ? ` | ${os.trade_in_option || ''} [ ${os.part_number} ]` : '');
             document.getElementById('display-desc').innerText = displayDesc;
             
-            // 🌟 CORREÇÃO: Oculta o painel de Identificação se o código já estiver gravado
+            // Controle de visibilidade do Painel de Identificação
             const panelIdentificacao = document.getElementById('panel-identificacao');
             if (os.part_number) {
                 if (panelIdentificacao) panelIdentificacao.classList.add('hidden');
