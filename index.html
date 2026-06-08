@@ -444,36 +444,51 @@
             if (!grid || !currentSelection) return;
             const allToRender = [...MASTER_COMPONENTS, ...specialItemsList];
             
-            // Controle estrito de liberação física da OS
             let todasPecasEnviadas = true;
 
             grid.innerHTML = allToRender.map(comp => {
-                // Busca defensiva que aceita tanto component_name quanto component
+                // Busca a peça correspondente no checklist de triagem para ver o status de compras (STOCK/ORDER)
+                const triageInfo = (currentSelection.triage_parts || []).find(t => {
+                    const dbName = (t.item_name || "").toUpperCase().trim();
+                    const targetName = comp.title.toUpperCase().trim();
+                    
+                    if (dbName === targetName) return true;
+                    if (targetName === "EIXO" && (dbName === "EIXO ROTOR" || dbName === "EIXO")) return true;
+                    if (targetName === "ROTOR" && (dbName === "ROTOR COMPRESSOR" || dbName === "ROTOR")) return true;
+                    if (targetName === "CT" && (dbName === "CARCAÇA DE TURBINA (CT)" || dbName === "CT")) return true;
+                    return false;
+                });
+
+                // Lógica de Segurança de Compras: Se foi marcado como "TROCAR" em vendas e "ORDER" na Triagem, a peça está em falta
+                const availability = triageInfo ? (triageInfo.availability || 'STOCK') : 'STOCK';
+                const isPendingOrder = availability === 'ORDER';
+
+                // Busca o rastreio da peça
                 const trk = (currentSelection.tracking || []).find(t => 
                     (t.component_name || t.component || '').toUpperCase() === comp.title.toUpperCase()
                 );
                 
-                // Mapeia o estágio atual (current_stage ou stage) de forma segura
                 const stageAtual = trk ? (trk.current_stage || trk.stage || '').toUpperCase() : '';
-                
-                // Inclui todos os setores posteriores (incluindo o BALANCEAMENTO)
                 const setoresPosteriores = ['RETIFICA', 'SOLDA', 'METROLOGIA', 'BANCADA', 'MONTAGEM', 'BALANCEAMENTO', 'BANCADA DE USINAGEM'];
                 const isSent = !!trk && setoresPosteriores.includes(stageAtual);
                 
-                if (!isSent) {
-                    todasPecasEnviadas = false; // Bloqueia liberação se houver peça pendente em Desmontagem
+                // Se a peça não foi enviada para a oficina e NÃO está bloqueada em compras, consideramos pendente de desmonte
+                if (!isSent && !isPendingOrder) {
+                    todasPecasEnviadas = false; 
                 }
 
-                // Resgata o histórico de cronometragem da coluna JSONB tracking_data
-                const trackingData = trk && trk.tracking_data ? (typeof trk.tracking_data === 'string' ? JSON.parse(trk.tracking_data) : trk.tracking_data) : [];
-
-                const cardStyle = isSent ? 'opacity-40 grayscale pointer-events-none' : '';
+                // Aplica estilo cinza/desabilitado se a peça estiver travada em Compras (EM TRIAGEM) ou se já tiver sido enviada
+                const isBlocked = isSent || isPendingOrder;
+                const cardStyle = isBlocked ? 'opacity-40 grayscale pointer-events-none' : '';
                 
-                // Badge Dinâmico
+                // Configuração das Badges no topo do Card
                 let badgeText = 'Desmontagem';
                 let badgeColor = 'bg-turbo-teal';
 
-                if (comp.isSpecial) {
+                if (isPendingOrder) {
+                    badgeText = 'EM TRIAGEM';
+                    badgeColor = 'bg-amber-500 animate-pulse'; // Amarelo/Laranja piscante de atenção
+                } else if (comp.isSpecial) {
                     if (comp.type === 'RETRABALHO') {
                         badgeText = 'RETRABALHO';
                         badgeColor = 'bg-red-600';
@@ -481,9 +496,7 @@
                         badgeText = 'ESPECIAL';
                         badgeColor = 'bg-turbo-teal';
                     }
-                }
-
-                if (isSent) {
+                } else if (isSent) {
                     const destino = stageAtual
                                      .replace('BANCADA DE USINAGEM', 'BANCADA')
                                      .replace('TRIAGEM DE PRODUÇÃO', 'TRIAGEM');
@@ -491,7 +504,8 @@
                     badgeColor = 'bg-slate-500';
                 }
 
-                // Renderiza cada serviço de limpeza com controle de cronômetro
+                const trackingData = trk && trk.tracking_data ? (typeof trk.tracking_data === 'string' ? JSON.parse(trk.tracking_data) : trk.tracking_data) : [];
+
                 const itemHtml = comp.items.map(item => {
                     const cleanItemName = item.replace(/\s+/g, '_').toLowerCase();
                     const savedLog = Array.isArray(trackingData) ? trackingData.find(log => log.service === item) : null;
@@ -517,18 +531,18 @@
                         <div class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 px-2 rounded-lg transition">
                             <div class="flex items-center space-x-3">
                                 <label class="flex items-center space-x-3 cursor-pointer group">
-                                    <input type="checkbox" ${isSent ? 'disabled' : ''} ${savedLog ? 'checked' : ''} class="w-5 h-5 rounded border-slate-300 text-turbo-teal focus:ring-turbo-teal transition-all" data-service="${item}">
+                                    <input type="checkbox" ${isBlocked ? 'disabled' : ''} ${savedLog ? 'checked' : ''} class="w-5 h-5 rounded border-slate-300 text-turbo-teal focus:ring-turbo-teal transition-all" data-service="${item}">
                                     <span class="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition">${item}</span>
                                 </label>
                             </div>
                             <div class="flex items-center space-x-2">
                                 ${timeBadgeHtml}
-                                ${!isSent ? actionBtnHtml : ''}
+                                ${!isBlocked ? actionBtnHtml : ''}
                             </div>
                         </div>`;
                 }).join('');
 
-                return `<div class="bg-white rounded-3xl shadow-sm border-2 border-slate-100 flex flex-col p-6 ${cardStyle}" id="card-comp-${comp.title.replace(/\s+/g, '-')}"><div class="flex justify-between items-center mb-6"><h4 class="text-2xl font-black text-slate-800 tracking-tighter uppercase">${comp.title}</h4><span class="text-[10px] font-black uppercase px-4 py-1.5 ${badgeColor} text-white rounded-full tracking-widest">${badgeText}</span></div><div class="flex-1 flex flex-col"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 italic">CHECKLIST DE LIMPEZA/TRATAMENTO:</p><div class="space-y-1 mb-8">${itemHtml}</div><hr class="border-slate-100 mb-6"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">ENCAMINHAR PARA:</p><div class="grid grid-cols-2 gap-2"><button onclick="sendPieceToSector('${comp.title}', 'RETIFICA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Retífica</button><button onclick="sendPieceToSector('${comp.title}', 'SOLDA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Solda</button><button onclick="sendPieceToSector('${comp.title}', 'METROLOGIA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Metrologia</button><button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Bancada</button>${comp.title.toUpperCase() === 'EIXO' ? `
+                return `<div class="bg-white rounded-3xl shadow-sm border-2 border-slate-100 flex flex-col p-6 ${cardStyle}" id="card-comp-${comp.title.replace(/\s+/g, '-')}"><div class="flex justify-between items-center mb-6"><h4 class="text-2xl font-black text-slate-800 tracking-tighter uppercase">${comp.title}</h4><span class="text-[10px] font-black uppercase px-4 py-1.5 ${badgeColor} text-white rounded-full tracking-widest">${badgeText}</span></div><div class="flex-1 flex flex-col"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 italic">EXCUTAR PROCESSOS:</p><div class="space-y-1 mb-8">${itemHtml}</div><hr class="border-slate-100 mb-6"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">ENCAMINHAR PARA:</p><div class="grid grid-cols-2 gap-2"><button onclick="sendPieceToSector('${comp.title}', 'RETIFICA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Retífica</button><button onclick="sendPieceToSector('${comp.title}', 'SOLDA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Solda</button><button onclick="sendPieceToSector('${comp.title}', 'METROLOGIA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Metrologia</button><button onclick="sendPieceToSector('${comp.title}', 'BANCADA', this)" class="py-3 bg-slate-50 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-100 transition">Bancada</button>${comp.title.toUpperCase() === 'EIXO' ? `
                                 <button onclick="sendPieceToSector('${comp.title}', 'BALANCEAMENTO', this)" class="col-span-2 py-3 bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-black uppercase rounded-lg transition shadow-md">Enviar p/ Balanceamento Solo</button>
                             ` : ''}
 
@@ -538,7 +552,6 @@
                 </div>`;
             }).join('');
 
-            // Controla a liberação do Botão 2 (Concluir Desmontagem) apenas quando 100% das peças forem enviadas
             const btnConcluir = document.getElementById('btn-concluir-desmontagem');
             if (btnConcluir) {
                 if (todasPecasEnviadas) {
