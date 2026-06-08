@@ -342,13 +342,13 @@
                 console.error("Erro ao carregar OS fresca do Supabase:", e);
             }
             
-            // Exibe a identificação salva no banner do topo se já existir
-            const displayDesc = `${os.client} | ${os.model}` + (os.part_number ? ` | ${os.trade_in_option || ''} [ ${os.part_number} ]` : '');
+            // Exibe a identificação salva no banner do topo de forma isolada
+            const displayDesc = `${os.client} | ${os.model} | P.N: ${os.part_number || '---'}` + (os.identificacao_e_marcacao_code ? ` | ${os.identificacao_e_marcacao_type || ''} [ ${os.identificacao_e_marcacao_code} ]` : '');
             document.getElementById('display-desc').innerText = displayDesc;
             
             // Controle de visibilidade do Painel de Identificação
             const panelIdentificacao = document.getElementById('panel-identificacao');
-            if (os.part_number) {
+            if (os.identificacao_e_marcacao_code) {
                 if (panelIdentificacao) panelIdentificacao.classList.add('hidden');
             } else {
                 if (panelIdentificacao) panelIdentificacao.classList.remove('hidden');
@@ -721,18 +721,18 @@ function openSpecialModal() {
                 const { error } = await supabaseClient
                     .from('service_orders')
                     .update({ 
-                        part_number: code,
-                        trade_in_option: type 
+                        identificacao_e_marcacao_code: code,
+                        identificacao_e_marcacao_type: type 
                     })
                     .eq('id', currentSelection.id);
                     
                 if (!error) {
                     // 1. Atualiza o objeto na memória do Front-end
-                    currentSelection.part_number = code;
-                    currentSelection.trade_in_option = type;
+                    currentSelection.identificacao_e_marcacao_code = code;
+                    currentSelection.identificacao_e_marcacao_type = type;
 
-                    // 2. Atualiza o texto descritivo do topo
-                    const displayDesc = `${currentSelection.client} | ${currentSelection.model} | ${type} [ ${code} ]`;
+                    // 2. Atualiza o texto descritivo do topo mantendo o Part Number original visível
+                    const displayDesc = `${currentSelection.client} | ${currentSelection.model} | P.N: ${currentSelection.part_number || '---'} | ${type} [ ${code} ]`;
                     document.getElementById('display-desc').innerText = displayDesc;
 
                     // 3. Esconde o painel imediatamente sem precisar recarregar a página
