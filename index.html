@@ -800,13 +800,13 @@ function openSpecialModal() {
             }).join('');
         }
 
-        // FUNÇÃO PARA PERSISTIR TODAS AS ABAS DO CHECKLIST EXCLUSIVO DA DESMONTAGEM (UPSERT)
+        // FUNÇÃO PARA PERSISTIR O CHECKLIST DA DESMONTAGEM COM AUDITORIA DE DIVERGÊNCIA E SENHA
         async function saveChecklistDisassembly() {
             if (!currentSelection) return false;
             
             const btn = document.getElementById('btn-salvar-checklist');
             btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-2"></i> Gravando...`;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-2"></i> Verificando Divergências...`;
 
             const rows = [];
             document.querySelectorAll('.status-select-disassembly').forEach(select => {
@@ -833,34 +833,92 @@ function openSpecialModal() {
             }
 
             try {
-                const { error } = await supabaseClient
-                    .from('checklist_desmontagem')
-                    .upsert(rows, { onConflict: 'service_order_id,item_name' });
-                
-                if (error) {
-                    console.error("Erro ao salvar checklist na Desmontagem:", error);
-                    alert("Erro ao salvar checklist: " + error.message);
+                // 1. Busca os vereditos originais da Análise Técnica no Supabase para comparação
+                const { data: baseline, error: baselineError } = await supabaseClient
+                    .from('checklist_analysis_general')
+                    .select('item_name, status')
+                    .eq('service_order_id', currentSelection.id);
+
+                if (baselineError) throw baselineError;
+
+                // 2. Compara os valores para detectar divergências
+                let hasDivergence = false;
+                const divergentItems = [];
+
+                rows.forEach(item => {
+                    const baseItem = baseline.find(b => b.item_name.toUpperCase().trim() === item.item_name.toUpperCase().trim());
+                    if (baseItem && baseItem.status.toUpperCase().trim() !== item.status.toUpperCase().trim()) {
+                        hasDivergence = true;
+                        divergentItems.push(`${item.item_name} (Análise: ${baseItem.status} | Desmontagem: ${item.status})`);
+                    }
+                });
+
+                const executeSave = async (isAuthorized = false, supervisorName = "") => {
+                    const { error } = await supabaseClient
+                        .from('checklist_desmontagem')
+                        .upsert(rows, { onConflict: 'service_order_id,item_name' });
+                    
+                    if (error) throw error;
+
+                    if (isAuthorized) {
+                        // Grava log detalhado de divergência no histórico geral da OS
+                        const detailsMsg = `Supervisor ${supervisorName} autorizou divergências na Desmontagem: ${divergentItems.join(', ')}`;
+                        await supabaseClient
+                            .from('history_events')
+                            .insert({
+                                service_order_id: currentSelection.id,
+                                action: 'Divergência de Checklist Autorizada',
+                                details: detailsMsg,
+                                timestamp: new Date().toISOString()
+                            });
+                    }
+
+                    const inputContainer = document.getElementById('checklist-inputs-container');
+                    const summaryContainer = document.getElementById('checklist-summary-container');
+                    if (inputContainer) inputContainer.classList.add('hidden');
+                    if (summaryContainer) {
+                        summaryContainer.classList.remove('hidden');
+                        renderChecklistSummary(rows);
+                    }
+
+                    document.getElementById('successMsg').innerText = "Checklist da Desmontagem salvo com sucesso!";
+                    document.getElementById('modalSuccess').classList.remove('hidden');
+                    return true;
+                };
+
+                // 3. Se houver divergência técnica, aciona a trava por senha
+                if (hasDivergence) {
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist';
+
+                    // Abre o modal de senha e configura o aviso
+                    const modal = document.getElementById('modal-supervisor');
+                    document.getElementById('modal-supervisor-desc').innerHTML = `<b>Divergências detectadas:</b><br>${divergentItems.join('<br>')}<br><br>Digite a senha do líder para autorizar o salvamento.`;
+                    document.getElementById('input-supervisor-password').value = '';
+                    modal.style.display = 'flex';
+
+                    // Configura o evento do botão de autorização
+                    document.getElementById('btn-confirm-supervisor').onclick = async () => {
+                        const pass = document.getElementById('input-supervisor-password').value.trim();
+                        if (pass === 'TURBOSUL2026') {
+                            closeSupervisorModal();
+                            btn.disabled = true;
+                            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-2"></i> Gravando...`;
+                            await executeSave(true, "Líder Desmontagem");
+                        } else {
+                            alert("❌ Senha incorreta! Autorização negada.");
+                        }
+                    };
                     return false;
-                }
-                
-                // 🌟 SUCESSO: Oculta o formulário de preenchimento e exibe o resumo em tempo real
-                const inputContainer = document.getElementById('checklist-inputs-container');
-                const summaryContainer = document.getElementById('checklist-summary-container');
-                if (inputContainer) inputContainer.classList.add('hidden');
-                if (summaryContainer) {
-                    summaryContainer.classList.remove('hidden');
-                    renderChecklistSummary(rows);
+                } else {
+                    // Sem divergência, salva direto
+                    await executeSave(false);
+                    return true;
                 }
 
-                // Exibe o modal de sucesso do próprio sistema
-                document.getElementById('successMsg').innerText = "Checklist da Desmontagem salvo com sucesso!";
-                document.getElementById('modalSuccess').classList.remove('hidden');
-                return true;
             } catch (e) {
                 console.error(e);
-                alert("Falha de conexão ao salvar checklist.");
+                alert("Falha de conexão ou erro ao processar o salvamento.");
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist';
                 return false;
@@ -1133,6 +1191,27 @@ function openSpecialModal() {
             }
         }, 1000);
 		
+    </script>
+<!-- MODAL: SENHA DO SUPERVISOR PARA LIBERAÇÃO DE DIVERGÊNCIA -->
+    <div id="modal-supervisor" style="display: none;" class="fixed inset-0 bg-slate-900/80 z-[300] flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center border-t-8 border-red-500">
+            <div class="w-20 h-20 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-key text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-black text-slate-800 uppercase tracking-tighter mb-2">Divergência Detectada!</h3>
+            <p id="modal-supervisor-desc" class="text-[11px] text-slate-500 font-medium italic mb-6">Os vereditos selecionados divergem da Análise Técnica original. Digite a senha do líder para autorizar.</p>
+            <input type="password" id="input-supervisor-password" placeholder="Digite a senha..." class="w-full bg-slate-100 border-2 border-transparent focus:border-red-500 rounded-2xl px-5 py-3 text-sm font-bold text-center outline-none mb-6">
+            <div class="flex space-x-3">
+                <button type="button" onclick="closeSupervisorModal()" class="flex-1 bg-slate-100 text-slate-400 font-black py-4 rounded-2xl uppercase text-xs tracking-widest hover:bg-slate-200">Cancelar</button>
+                <button type="button" id="btn-confirm-supervisor" class="flex-[2] bg-red-600 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest shadow-lg hover:bg-red-700">Autorizar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function closeSupervisorModal() {
+            document.getElementById('modal-supervisor').style.display = 'none';
+        }
     </script>
 </body>
 </html>
