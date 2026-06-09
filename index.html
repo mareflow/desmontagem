@@ -521,9 +521,6 @@
 
                 const trackingData = trk && trk.tracking_data ? (typeof trk.tracking_data === 'string' ? JSON.parse(trk.tracking_data) : trk.tracking_data) : [];
 
-                const isPendingOrder = (status === 'AGUARDANDO_COMPRA');
-                const isBlocked = isSent || isPendingOrder;
-
                 const itemHtml = comp.items.map(item => {
                     const cleanItemName = item.replace(/\s+/g, '_').toLowerCase();
                     const savedLog = Array.isArray(trackingData) ? trackingData.find(log => log.service === item) : null;
