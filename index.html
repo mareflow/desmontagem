@@ -521,6 +521,9 @@
 
                 const trackingData = trk && trk.tracking_data ? (typeof trk.tracking_data === 'string' ? JSON.parse(trk.tracking_data) : trk.tracking_data) : [];
 
+                const isPendingOrder = (status === 'AGUARDANDO_COMPRA');
+                const isBlocked = isSent || isPendingOrder;
+
                 const itemHtml = comp.items.map(item => {
                     const cleanItemName = item.replace(/\s+/g, '_').toLowerCase();
                     const savedLog = Array.isArray(trackingData) ? trackingData.find(log => log.service === item) : null;
@@ -543,12 +546,10 @@
                     }
 
                     return `
-                        <div class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 px-2 rounded-lg transition">
+                        <div class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 px-2 rounded-lg transition ${isBlocked ? 'opacity-50 grayscale' : ''}">
                             <div class="flex items-center space-x-3">
-                                <label class="flex items-center space-x-3 cursor-pointer group">
-                                    <input type="checkbox" ${isBlocked ? 'disabled' : ''} ${savedLog ? 'checked' : ''} class="w-5 h-5 rounded border-slate-300 text-turbo-teal focus:ring-turbo-teal transition-all" data-service="${item}">
-                                    <span class="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition">${item}</span>
-                                </label>
+                                <input type="checkbox" ${isBlocked ? 'disabled' : ''} ${savedLog ? 'checked' : ''} class="w-5 h-5 rounded border-slate-300 text-turbo-teal focus:ring-turbo-teal" data-service="${item}">
+                                <span class="text-xs font-bold text-slate-600">${item} ${isPendingOrder ? '<span class="text-[9px] font-black text-amber-600 italic">(EM COMPRA)</span>' : ''}</span>
                             </div>
                             <div class="flex items-center space-x-2">
                                 ${timeBadgeHtml}
