@@ -351,6 +351,8 @@
                     os.part_number = osFresh.part_number;
                     os.trade_in_option = osFresh.trade_in_option;
                     os.status = osFresh.status;
+                    os.identificacao_e_marcacao_code = osFresh.identificacao_e_marcacao_code;
+                    os.identificacao_e_marcacao_type = osFresh.identificacao_e_marcacao_type;
                 }
             } catch (e) {
                 console.error("Erro ao carregar OS fresca do Supabase:", e);
@@ -383,6 +385,10 @@
             } catch (e) {
                 console.error("Erro ao carregar rastreio na Desmontagem:", e);
             }
+
+            // Remove bloqueios de divergência da tela, se houver
+            const compGrid = document.getElementById('component-grid');
+            if(compGrid) compGrid.classList.remove('opacity-40', 'pointer-events-none', 'grayscale');
 
             // Resetador do contêiner de inputs e resumo do checklist
             const inputContainer = document.getElementById('checklist-inputs-container');
@@ -560,6 +566,10 @@
                 if (todasPecasEnviadas) {
                     btnConcluir.disabled = false;
                     btnConcluir.className = "bg-turbo-orange hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-xl transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center cursor-pointer";
+                    
+                    // Remove a OS da barra lateral esquerda, evitando OS fantasma
+                    const sidebarCard = document.getElementById(`card-${currentSelection.id}`);
+                    if (sidebarCard) sidebarCard.style.display = 'none';
                 } else {
                     btnConcluir.disabled = true;
                     btnConcluir.className = "bg-gray-300 text-slate-400 cursor-not-allowed font-bold py-3 px-6 rounded-xl transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center";
@@ -1199,6 +1209,13 @@ function openSpecialModal() {
     <script>
         function closeSupervisorModal() {
             document.getElementById('modal-supervisor').style.display = 'none';
+            
+            // Bloqueia a tela de componentes se o modal for fechado sem a senha (Divergência não autorizada)
+            const compGrid = document.getElementById('component-grid');
+            if(compGrid) {
+                compGrid.classList.add('opacity-40', 'pointer-events-none', 'grayscale');
+            }
+            alert("⚠️ Divergência não autorizada. As operações desta OS foram bloqueadas.");
         }
     </script>
 </body>
