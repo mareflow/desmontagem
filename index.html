@@ -779,6 +779,16 @@ function openSpecialModal() {
                     const displayDesc = `${currentSelection.client} | ${currentSelection.model} | P.N: ${currentSelection.part_number || '---'} | ${type} [ ${code} ]`;
                     document.getElementById('display-desc').innerText = displayDesc;
 
+                    // Grava automaticamente o evento de identificação e carimbo físico na timeline
+                    await supabaseClient
+                        .from('history_events')
+                        .insert({
+                            service_order_id: currentSelection.id,
+                            action: 'Identificação Gravada',
+                            details: `Identificação e marcação registradas no desmonte: ${type} [ ${code} ]`,
+                            timestamp: new Date().toISOString()
+                        });
+
                     // 3. Esconde o painel imediatamente sem precisar recarregar a página
                     const panelIdentificacao = document.getElementById('panel-identificacao');
                     if (panelIdentificacao) {
