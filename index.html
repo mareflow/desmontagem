@@ -940,9 +940,16 @@ function openSpecialModal() {
                     document.getElementById('input-supervisor-password').value = '';
                     modal.style.display = 'flex';
 
-                    // Configura o evento do botão de autorização
+                    // Configura o evento do botão de autorização (Validando senha + observação obrigatória)
                     document.getElementById('btn-confirm-supervisor').onclick = async () => {
                         const pass = document.getElementById('input-supervisor-password').value.trim();
+                        const obs = document.getElementById('input-supervisor-observation').value.trim();
+
+                        if (!obs) {
+                            alert("❌ Digite uma observação/justificativa para autorizar a divergência.");
+                            return;
+                        }
+
                         if (pass === 'TURBOSUL2026') {
                             closeSupervisorModal(true); // <-- Avisa que foi autorizado para não bloquear
                             
@@ -952,7 +959,7 @@ function openSpecialModal() {
 
                             btn.disabled = true;
                             btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-2"></i> Gravando...`;
-                            await executeSave(true, "Líder Desmontagem");
+                            await executeSave(true, `Líder Desmontagem (Obs: "${obs}")`);
                         } else {
                             alert("❌ Senha incorreta! Autorização negada.");
                         }
@@ -1247,8 +1254,13 @@ function openSpecialModal() {
                 <i class="fa-solid fa-key text-3xl"></i>
             </div>
             <h3 class="text-xl font-black text-slate-800 uppercase tracking-tighter mb-2">Divergência Detectada!</h3>
-            <p id="modal-supervisor-desc" class="text-[11px] text-slate-500 font-medium italic mb-6">Os vereditos selecionados divergem da Análise Técnica original. Digite a senha do líder para autorizar.</p>
+            <p id="modal-supervisor-desc" class="text-[11px] text-slate-500 font-medium italic mb-4">Os vereditos selecionados divergem da Análise Técnica original. Digite a senha do líder para autorizar.</p>
+            
+            <!-- Novo campo de Observação/Justificativa do Líder -->
+            <textarea id="input-supervisor-observation" placeholder="Escreva a justificativa/observação..." rows="2" class="w-full bg-slate-100 border-2 border-transparent focus:border-red-500 rounded-2xl px-5 py-3 text-xs font-bold outline-none mb-3 resize-none"></textarea>
+            
             <input type="password" id="input-supervisor-password" placeholder="Digite a senha..." class="w-full bg-slate-100 border-2 border-transparent focus:border-red-500 rounded-2xl px-5 py-3 text-sm font-bold text-center outline-none mb-6">
+            
             <div class="flex space-x-3">
                 <button type="button" onclick="closeSupervisorModal()" class="flex-1 bg-slate-100 text-slate-400 font-black py-4 rounded-2xl uppercase text-xs tracking-widest hover:bg-slate-200">Cancelar</button>
                 <button type="button" id="btn-confirm-supervisor" class="flex-[2] bg-red-600 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest shadow-lg hover:bg-red-700">Autorizar</button>
