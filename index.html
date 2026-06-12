@@ -924,6 +924,16 @@ function openSpecialModal() {
                                 details: detailsMsg,
                                 timestamp: new Date().toISOString()
                             });
+                    } else {
+                        // Grava o log padrão de sucesso de checklist de desmontagem finalizado na timeline
+                        await supabaseClient
+                            .from('history_events')
+                            .insert({
+                                service_order_id: currentSelection.id,
+                                action: 'Checklist de Desmontagem Salvo',
+                                details: `Checklist de desmontagem preenchido com sucesso e integrado ao laudo técnico.`,
+                                timestamp: new Date().toISOString()
+                            });
                     }
 
                     const inputContainer = document.getElementById('checklist-inputs-container');
