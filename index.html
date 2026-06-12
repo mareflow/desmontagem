@@ -840,15 +840,28 @@ function openSpecialModal() {
 
                 if (baselineError) throw baselineError;
 
-                // 2. Compara os valores para detectar divergências
+                // 2. Compara os valores para detectar divergências (LÓGICA CORRIGIDA)
                 let hasDivergence = false;
                 const divergentItems = [];
 
                 rows.forEach(item => {
-                    const baseItem = baseline.find(b => b.item_name.toUpperCase().trim() === item.item_name.toUpperCase().trim());
-                    if (baseItem && baseItem.status.toUpperCase().trim() !== item.status.toUpperCase().trim()) {
-                        hasDivergence = true;
-                        divergentItems.push(`${item.item_name} (Análise: ${baseItem.status} | Desmontagem: ${item.status})`);
+                    // Busca se a peça foi avaliada na Análise Técnica
+                    const baseItem = baseline && baseline.find(b => b.item_name.toUpperCase().trim() === item.item_name.toUpperCase().trim());
+                    
+                    // Se não achou na Análise, o status base assumido é 'NÃO INFORMADO'
+                    const baseStatus = baseItem ? baseItem.status.toUpperCase().trim() : 'NÃO INFORMADO';
+                    const newStatus = item.status.toUpperCase().trim();
+
+                    // Se o status da Desmontagem for diferente da Análise Técnica
+                    if (baseStatus !== newStatus) {
+                        // Ignora divergência apenas se a Análise não avaliou e a Desmontagem marcou como "PEÇA OK" (pois não gera custo extra/imprevisto)
+                        if (baseStatus === 'NÃO INFORMADO' && newStatus === 'PEÇA OK') {
+                            // Não faz nada, é aceitável
+                        } else {
+                            // Qualquer outra diferença acusa divergência (Ex: Análise não viu e Desmontador quer trocar, ou Análise deu OK e Desmontador quer recondicionar)
+                            hasDivergence = true;
+                            divergentItems.push(`${item.item_name} (Análise: ${baseStatus} | Desmontagem: ${newStatus})`);
+                        }
                     }
                 });
 
