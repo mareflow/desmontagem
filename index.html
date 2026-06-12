@@ -337,6 +337,7 @@
             document.getElementById(`card-${os.id}`)?.classList.add('os-selected');
             document.getElementById('welcome-screen').classList.add('hidden');
             document.getElementById('main-workspace').classList.remove('hidden');
+            document.getElementById('workspace-header').classList.remove('hidden'); // Exibe o cabeçalho com a OS e a Marcação
             document.getElementById('display-os').innerText = os.business_id;
 
             // Busca direta dos dados completos e atualizados da OS no Supabase (bypass da View)
